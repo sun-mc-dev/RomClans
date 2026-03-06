@@ -1,0 +1,45 @@
+# ============================================================
+#  RomClans — Configuration
+# ============================================================
+
+# The command alias players use. Can be: clan, guild, team, etc.
+command-alias: clan
+
+database:
+  # SQLITE or MYSQL
+  type: SQLITE
+  sqlite:
+    file: clans.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: romclans
+    username: root
+    password: ''
+    pool-size: 10
+    use-ssl: false
+
+redis:
+  enabled: false
+  host: localhost
+  port: 6379
+  password: ''
+  database: 0
+  # Unique identifier for THIS server (used to avoid echo-broadcasting)
+  server-id: server-1
+
+clans:
+  max-name-length: 16
+  min-name-length: 3
+  # Refers to visible (plain-text) character count of the tag
+  max-tag-length: 8
+  min-tag-length: 2
+  max-members: 50
+  max-allies: 5
+  max-enemies: 10
+  # Seconds to wait before teleporting to clan home (0 = instant)
+  home-teleport-delay: 3
+  # Whether friendly fire is enabled by default on clan creation
+  friendly-fire-default: false
+  # Seconds before a pending invite expires
+  invite-expiry: 300

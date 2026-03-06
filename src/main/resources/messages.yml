@@ -1,0 +1,138 @@
+prefix: "<gray>[<gold>Clans</gold>]</gray>"
+
+# General
+no-permission: "{prefix} <red>You don't have permission to do that."
+not-in-clan: "{prefix} <red>You are not in a clan."
+already-in-clan: "{prefix} <red>You are already in a clan."
+player-not-found: "{prefix} <red>Player <yellow><player></yellow> is not online."
+clan-not-found: "{prefix} <red>Clan <yellow><clan></yellow> does not exist."
+error: "{prefix} <red>An internal error occurred. Please contact an admin."
+console-no-use: "Only players can use clan commands."
+
+# Create
+create-invalid-name: "{prefix} <red>Invalid name. Use 3-16 alphanumeric characters or underscores."
+create-invalid-tag: "{prefix} <red>Invalid tag length. Visible text must be <min>-<max> characters."
+create-name-taken: "{prefix} <red>That clan name is already taken."
+create-success: "{prefix} <green>Clan <gold><name></gold> created!"
+
+# Disband
+disband-not-leader: "{prefix} <red>Only the clan leader can disband the clan."
+disband-success: "{prefix} <red>Your clan has been disbanded."
+disband-notify: "{prefix} <red>Your clan has been disbanded by the leader."
+
+# FriendlyFire
+ff-enabled: "{prefix} <green>Friendly fire is now <bold>enabled</bold>."
+ff-disabled: "{prefix} <green>Friendly fire is now <bold>disabled</bold>."
+ff-not-leader: "{prefix} <red>Only the clan leader can toggle friendly fire."
+ff-blocked: "{prefix} <red>You cannot attack a clan-mate!"
+
+# Invite
+invite-sent: "{prefix} <green>Invite sent to <yellow><player></yellow>."
+invite-received: "{prefix} <yellow><player></yellow> has invited you to join <gold><clan></gold>. Use <white>/<cmd> accept <clan></white> or <white>/<cmd> deny <clan></white>."
+invite-no-pending: "{prefix} <red>You have no pending invite from <yellow><clan></yellow>."
+invite-expired: "{prefix} <red>That invite has expired."
+invite-already-sent: "{prefix} <red>You have already invited that player."
+invite-target-in-clan: "{prefix} <red>That player is already in a clan."
+invite-clan-full: "{prefix} <red>Your clan is full."
+invite-not-officer: "{prefix} <red>You must be an Officer or higher to invite players."
+
+# Accept / Deny
+accept-success: "{prefix} <green>You have joined <gold><clan></gold>!"
+accept-notify: "{prefix} <green><player></green> has joined the clan!"
+deny-success: "{prefix} <yellow>You denied the invite from <gold><clan></gold>."
+deny-notify: "{prefix} <yellow><player></yellow> denied your clan invite."
+
+# Leave
+leave-success: "{prefix} <yellow>You have left <gold><clan></gold>."
+leave-notify: "{prefix} <yellow><player></yellow> has left the clan."
+leave-leader: "{prefix} <red>You are the leader. Transfer leadership first or use /clan disband."
+
+# Kick
+kick-success: "{prefix} <yellow><player></yellow> has been kicked from the clan."
+kick-notify: "{prefix} <red>You have been kicked from the clan."
+kick-not-found: "{prefix} <red>That player is not in your clan."
+kick-no-perm: "{prefix} <red>You cannot kick someone of equal or higher rank."
+kick-self: "{prefix} <red>You cannot kick yourself."
+
+# Promote / Demote
+promote-success: "{prefix} <green><player></green> has been promoted to <gold><rank></gold>."
+promote-notify: "{prefix} <green>You have been promoted to <gold><rank></gold>."
+promote-max-rank: "{prefix} <red>That player is already at the highest promotable rank."
+demote-success: "{prefix} <yellow><player></yellow> has been demoted to <gold><rank></gold>."
+demote-notify: "{prefix} <yellow>You have been demoted to <gold><rank></gold>."
+demote-min-rank: "{prefix} <red>That player cannot be demoted further."
+rank-no-perm: "{prefix} <red>You cannot manage someone of equal or higher rank."
+
+# Transfer
+transfer-success: "{prefix} <green>Leadership transferred to <yellow><player></yellow>."
+transfer-notify: "{prefix} <gold>You are now the leader of the clan!"
+transfer-not-leader: "{prefix} <red>Only the leader can transfer leadership."
+
+# Ally
+ally-request-sent: "{prefix} <green>Alliance request sent to <gold><clan></gold>."
+ally-request-received: "{prefix} <gold><clan></gold> has sent an alliance request. Use <white>/<cmd> ally accept <clan></white>."
+ally-accept-success: "{prefix} <green>You are now allied with <gold><clan></gold>!"
+ally-accept-notify: "{prefix} <green><clan></clan> has accepted your alliance request!"
+ally-deny-success: "{prefix} <yellow>You denied the alliance request from <gold><clan></gold>."
+ally-deny-notify: "{prefix} <yellow><clan></clan> denied your alliance request."
+ally-remove-success: "{prefix} <yellow>Alliance with <gold><clan></gold> has been broken."
+ally-remove-notify: "{prefix} <yellow><clan></clan> broke the alliance with you."
+ally-already: "{prefix} <red>You are already allied with that clan."
+ally-max: "{prefix} <red>You have reached the maximum number of allies."
+ally-no-request: "{prefix} <red>No pending alliance request from <yellow><clan></yellow>."
+ally-self: "{prefix} <red>You cannot ally your own clan."
+ally-not-leader: "{prefix} <red>Only the leader can manage alliances."
+ally-not-allied: "{prefix} <red>You are not allied with that clan."
+
+# Enemy
+enemy-add-success: "{prefix} <red>You have declared <gold><clan></gold> an enemy."
+enemy-add-notify: "{prefix} <red><clan></clan> has declared your clan an enemy!"
+enemy-remove-success: "{prefix} <yellow><gold><clan></gold> is no longer your enemy."
+enemy-already: "{prefix} <red>That clan is already your enemy."
+enemy-not: "{prefix} <red>That clan is not your enemy."
+enemy-self: "{prefix} <red>You cannot declare your own clan as an enemy."
+enemy-not-leader: "{prefix} <red>Only the leader can manage enemies."
+enemy-max: "{prefix} <red>You have reached the maximum number of enemies."
+
+# Chat
+chat-mode-clan: "{prefix} <green>Chat mode set to <gold>Clan</gold>."
+chat-mode-ally: "{prefix} <green>Chat mode set to <aqua>Ally</aqua>."
+chat-mode-global: "{prefix} <green>Chat mode set to <white>Global</white>."
+chat-not-in-clan-for-ally: "{prefix} <red>You must be in a clan to use ally chat."
+chat-no-allies: "{prefix} <red>Your clan has no allies."
+
+# Chat format (use Adventure tags freely)
+chat-format-clan: "<dark_gray>[<gold>Clan</gold>]</dark_gray> <tag> <white><player></white><gray>:</gray> <white><message>"
+chat-format-ally: "<dark_gray>[<aqua>Ally</aqua>]</dark_gray> <tag> <white><player></white><gray>:</gray> <white><message>"
+
+# Info
+info-header: "<gold><bold>— Clan: <name> —"
+info-tag: "<gray>Tag:</gray> <tag>"
+info-leader: "<gray>Leader:</gray> <yellow><leader>"
+info-members: "<gray>Members:</gray> <yellow><count>/<max>"
+info-allies: "<gray>Allies:</gray> <yellow><allies>"
+info-enemies: "<gray>Enemies:</gray> <yellow><enemies>"
+info-ff: "<gray>Friendly Fire:</gray> <yellow><ff>"
+info-created: "<gray>Created:</gray> <yellow><date>"
+
+# Members
+members-header: "<gold><bold>— Members of <name> —"
+members-entry: " <gray>-</gray> <yellow><player></yellow> <gray>(<rank>)</gray>"
+
+# List
+list-header: "<gold><bold>— All Clans —"
+list-entry: " <gray>-</gray> <tag> <yellow><name></yellow> <gray>(<members> members)</gray>"
+list-empty: "{prefix} <gray>No clans exist yet."
+
+# Retag
+retag-success: "{prefix} <green>Clan tag updated to <tag>."
+retag-not-leader: "{prefix} <red>Only the leader can change the clan tag."
+
+# Home
+home-set: "{prefix} <green>Clan home set to your current location."
+home-set-not-leader: "{prefix} <red>Only the leader can set the clan home."
+home-not-set: "{prefix} <red>Your clan does not have a home set."
+home-teleporting: "{prefix} <yellow>Teleporting to clan home in <white><seconds></white> seconds. Don't move!"
+home-teleported: "{prefix} <green>Teleported to clan home!"
+home-moved: "{prefix} <red>Teleport cancelled — you moved!"
+home-world-missing: "{prefix} <red>The clan home world no longer exists."
