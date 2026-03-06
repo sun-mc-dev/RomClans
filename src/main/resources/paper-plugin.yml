@@ -1,8 +1,0 @@
-name: RomClans
-version: '${project.version}'
-main: me.sunmc.clans.RomClans
-api-version: '1.21.4'
-folia-supported: true
-description: Powerful async clan plugin for Folia 1.21.11
-authors: [ SunMC ]
-softdepend: [ PlaceholderAPI ]
