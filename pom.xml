@@ -45,13 +45,13 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikari.version}</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>${sqlite.version}</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
@@ -80,6 +80,13 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -103,15 +110,17 @@
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <relocations>
-                                <!--
-                                <relocation>
-                                    <pattern>redis.clients</pattern>
-                                    <shadedPattern>me.sunmc.clans.libs.jedis</shadedPattern>
-                                </relocation>
-                                -->
                                 <relocation>
                                     <pattern>com.mysql</pattern>
                                     <shadedPattern>me.sunmc.clans.libs.mysql</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.zaxxer.hikari</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.hikari</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.sqlite</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.sqlite</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
