@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Thread-safe in-memory cache of all clans.
- * All reads/writes use ConcurrentHashMap so they are safe from any thread.
+ * All reads/writes use ConcurrentHashMap, so they are safe from any thread.
  */
 public class ClanCache {
 

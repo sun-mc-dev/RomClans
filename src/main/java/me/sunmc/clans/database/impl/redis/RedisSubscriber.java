@@ -1,14 +1,14 @@
-package me.sunmc.clans.redis;
+package me.sunmc.clans.database.impl.redis;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.lettuce.core.pubsub.RedisPubSubAdapter;
 import me.sunmc.clans.RomClans;
 import org.jetbrains.annotations.NotNull;
-import redis.clients.jedis.JedisPubSub;
 
 import java.util.logging.Level;
 
-public class RedisSubscriber extends JedisPubSub {
+public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
 
     private final RomClans plugin;
     private final String ownServerId;
@@ -18,12 +18,16 @@ public class RedisSubscriber extends JedisPubSub {
         this.ownServerId = ownServerId;
     }
 
+    /**
+     * Called by Lettuce's Netty event loop thread whenever a message arrives.
+     * Keep this method fast — do not block here.
+     */
     @Override
-    public void onMessage(String channel, String message) {
+    public void message(String channel, String message) {
         try {
             JsonObject json = JsonParser.parseString(message).getAsJsonObject();
             String serverId = json.has("serverId") ? json.get("serverId").getAsString() : "";
-            // Ignore own broadcasts
+            // Ignore our own broadcasts
             if (ownServerId.equals(serverId)) return;
 
             switch (channel) {
@@ -32,7 +36,8 @@ public class RedisSubscriber extends JedisPubSub {
                 case RedisManager.CHAN_SYNC -> handleSync(json);
             }
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "Error processing Redis message: " + message, e);
+            plugin.getLogger().log(Level.WARNING,
+                    "Error processing Redis message on channel " + channel + ": " + message, e);
         }
     }
 
@@ -65,11 +70,7 @@ public class RedisSubscriber extends JedisPubSub {
                     j.get("relType").getAsString(),
                     j.get("action").getAsString()
             );
-            case "CACHE_INVALIDATE" -> {
-                // Reload clan from DB
-                String clanId = j.get("clanId").getAsString();
-                plugin.getClanManager().loadAll(); // simple full reload; optimise per-clan if needed
-            }
+            case "CACHE_INVALIDATE" -> plugin.getClanManager().loadAll();
         }
     }
 }

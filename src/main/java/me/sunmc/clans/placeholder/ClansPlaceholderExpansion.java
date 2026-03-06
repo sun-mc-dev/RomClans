@@ -24,7 +24,7 @@ public class ClansPlaceholderExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getAuthor() {
-        return "GigiAki";
+        return "SunMC";
     }
 
     @Override

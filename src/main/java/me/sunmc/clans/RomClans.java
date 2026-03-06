@@ -14,7 +14,7 @@ import me.sunmc.clans.manager.ClanManager;
 import me.sunmc.clans.manager.InviteManager;
 import me.sunmc.clans.manager.RelationManager;
 import me.sunmc.clans.placeholder.ClansPlaceholderExpansion;
-import me.sunmc.clans.redis.RedisManager;
+import me.sunmc.clans.database.impl.redis.RedisManager;
 import me.sunmc.clans.util.FoliaScheduler;
 import org.bukkit.plugin.java.JavaPlugin;
 

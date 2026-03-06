@@ -1,10 +1,13 @@
-package me.sunmc.clans.redis;
+package me.sunmc.clans.database.impl.redis;
 
 import com.google.gson.JsonObject;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import me.sunmc.clans.RomClans;
-import redis.clients.jedis.*;
-import redis.clients.jedis.providers.PooledConnectionProvider;
 
+import java.time.Duration;
 import java.util.logging.Level;
 
 public class RedisManager {
@@ -12,12 +15,14 @@ public class RedisManager {
     public static final String CHAN_CHAT = "romclans:chat";
     public static final String CHAN_INVITE = "romclans:invite";
     public static final String CHAN_SYNC = "romclans:sync";
+
     private final RomClans plugin;
-    private UnifiedJedis jedisClient;
-    // Dedicated raw Jedis connection for the blocking subscribe call
-    private Jedis subscriberJedis;
-    private RedisSubscriber subscriber;
-    private Thread subThread;
+
+    private RedisClient redisClient;
+    // Thread-safe command connection used exclusively for publish()
+    private StatefulRedisConnection<String, String> publishConn;
+    private StatefulRedisPubSubConnection<String, String> pubSubConn;
+
     private volatile boolean active = false;
     private String serverId;
 
@@ -30,56 +35,32 @@ public class RedisManager {
             var cfg = plugin.getConfigManager();
             serverId = cfg.getServerId();
 
-            HostAndPort hostAndPort = new HostAndPort(cfg.getRedisHost(), cfg.getRedisPort());
-
-            // Build client config
-            DefaultJedisClientConfig.Builder clientBuilder = DefaultJedisClientConfig.builder()
-                    .timeoutMillis(2000)
-                    .database(cfg.getRedisDatabase());
+            RedisURI.Builder uriBuilder = RedisURI.builder()
+                    .withHost(cfg.getRedisHost())
+                    .withPort(cfg.getRedisPort())
+                    .withDatabase(cfg.getRedisDatabase())
+                    .withTimeout(Duration.ofSeconds(5));
 
             String password = cfg.getRedisPassword();
             if (!password.isBlank()) {
-                clientBuilder.password(password);
+                uriBuilder.withPassword(password.toCharArray());
             }
 
-            JedisClientConfig clientConfig = clientBuilder.build();
+            redisClient = RedisClient.create(uriBuilder.build());
 
-            ConnectionPoolConfig poolConfig = new ConnectionPoolConfig();
-            poolConfig.setMaxTotal(8);
-            poolConfig.setMaxIdle(4);
-            poolConfig.setMinIdle(1);
-            poolConfig.setTestOnBorrow(true);
-            poolConfig.setTestWhileIdle(true);
-
-            PooledConnectionProvider provider =
-                    new PooledConnectionProvider(hostAndPort, clientConfig, poolConfig);
-            jedisClient = new UnifiedJedis(provider);
+            publishConn = redisClient.connect();
 
             // Test connection
-            jedisClient.ping();
+            publishConn.sync().ping();
 
-            // Dedicated blocking connection for pub/sub — subscribe() blocks its thread
-            subscriberJedis = new Jedis(hostAndPort, clientConfig);
-            subscriber = new RedisSubscriber(plugin, serverId);
-
-            subThread = new Thread(() -> {
-                try {
-                    // This call blocks until unsubscribed or the connection drops
-                    subscriberJedis.subscribe(subscriber, CHAN_CHAT, CHAN_INVITE, CHAN_SYNC);
-                } catch (Exception e) {
-                    if (active) plugin.getLogger().log(Level.WARNING, "Redis subscriber disconnected", e);
-                } finally {
-                    try {
-                        subscriberJedis.close();
-                    } catch (Exception ignored) {
-                    }
-                }
-            }, "RomClans-Redis-Sub");
-            subThread.setDaemon(true);
-            subThread.start();
+            pubSubConn = redisClient.connectPubSub();
+            pubSubConn.addListener(new RedisSubscriber(plugin, serverId));
+            // subscribe() call is non-blocking in Lettuce (async under the hood)
+            pubSubConn.sync().subscribe(CHAN_CHAT, CHAN_INVITE, CHAN_SYNC);
 
             active = true;
-            plugin.getLogger().info("Redis connected: " + cfg.getRedisHost() + ":" + cfg.getRedisPort());
+            plugin.getLogger().info("Redis (Lettuce) connected: "
+                    + cfg.getRedisHost() + ":" + cfg.getRedisPort());
             return true;
 
         } catch (Exception e) {
@@ -90,32 +71,33 @@ public class RedisManager {
 
     public void shutdown() {
         active = false;
-        // Unsubscribe first so the subscriber thread exits cleanly
-        if (subscriber != null && subscriber.isSubscribed()) {
+        if (pubSubConn != null) {
             try {
-                subscriber.unsubscribe();
+                pubSubConn.sync().unsubscribe(CHAN_CHAT, CHAN_INVITE, CHAN_SYNC);
+                pubSubConn.close();
             } catch (Exception ignored) {
             }
         }
-        if (subscriberJedis != null) {
+        if (publishConn != null) {
             try {
-                subscriberJedis.close();
+                publishConn.close();
             } catch (Exception ignored) {
             }
         }
-        if (jedisClient != null) {
+        if (redisClient != null) {
             try {
-                jedisClient.close();
+                redisClient.shutdown();
             } catch (Exception ignored) {
             }
         }
     }
 
     public boolean isActive() {
-        return active && jedisClient != null;
+        return active && publishConn != null && publishConn.isOpen();
     }
 
-    public void publishChat(String type, String clanId, String senderName, String clanTag, String message) {
+    public void publishChat(String type, String clanId, String senderName,
+                            String clanTag, String message) {
         JsonObject o = new JsonObject();
         o.addProperty("type", type);
         o.addProperty("clanId", clanId);
@@ -139,7 +121,8 @@ public class RedisManager {
         publish(CHAN_INVITE, o.toString());
     }
 
-    public void publishRelationUpdate(String clanAId, String clanBId, String relType, String action) {
+    public void publishRelationUpdate(String clanAId, String clanBId,
+                                      String relType, String action) {
         JsonObject o = new JsonObject();
         o.addProperty("type", "RELATION_UPDATE");
         o.addProperty("clanA", clanAId);
@@ -162,7 +145,7 @@ public class RedisManager {
         if (!isActive()) return;
         plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
             try {
-                jedisClient.publish(channel, payload);
+                publishConn.async().publish(channel, payload);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.WARNING, "Redis publish failed", e);
             }
