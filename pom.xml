@@ -53,6 +53,7 @@
             <version>${sqlite.version}</version>
             <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
@@ -109,11 +110,29 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>io.netty:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>io.netty.incubator:*</artifact>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <relocations>
-                                <relocation>
-                                    <pattern>com.mysql</pattern>
-                                    <shadedPattern>me.sunmc.clans.libs.mysql</shadedPattern>
-                                </relocation>
                                 <relocation>
                                     <pattern>com.zaxxer.hikari</pattern>
                                     <shadedPattern>me.sunmc.clans.libs.hikari</shadedPattern>
@@ -123,16 +142,16 @@
                                     <shadedPattern>me.sunmc.clans.libs.lettuce</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>io.netty</pattern>
-                                    <shadedPattern>me.sunmc.clans.libs.netty</shadedPattern>
-                                </relocation>
-                                <relocation>
                                     <pattern>reactor</pattern>
                                     <shadedPattern>me.sunmc.clans.libs.reactor</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.reactivestreams</pattern>
                                     <shadedPattern>me.sunmc.clans.libs.reactivestreams</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.mysql</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.mysql</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
