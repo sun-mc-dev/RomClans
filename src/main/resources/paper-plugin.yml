@@ -6,6 +6,3 @@ folia-supported: true
 description: Powerful async clan plugin for Folia 1.21.11
 authors: [ SunMC ]
 softdepend: [ PlaceholderAPI ]
-
-libraries:
-  - io.lettuce:lettuce-core:7.5.0.RELEASE

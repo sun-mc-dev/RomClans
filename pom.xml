@@ -63,7 +63,7 @@
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
             <version>${lettuce.version}</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -119,8 +119,20 @@
                                     <shadedPattern>me.sunmc.clans.libs.hikari</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>org.sqlite</pattern>
-                                    <shadedPattern>me.sunmc.clans.libs.sqlite</shadedPattern>
+                                    <pattern>io.lettuce</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.lettuce</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.netty</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.netty</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>reactor</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.reactor</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.reactivestreams</pattern>
+                                    <shadedPattern>me.sunmc.clans.libs.reactivestreams</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
