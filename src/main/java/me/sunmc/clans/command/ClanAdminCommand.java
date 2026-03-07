@@ -1,0 +1,146 @@
+package me.sunmc.clans.command;
+
+import me.sunmc.clans.RomClans;
+import me.sunmc.clans.gui.ClanInfoGUI;
+import me.sunmc.clans.gui.ConfirmGUI;
+import me.sunmc.clans.model.Clan;
+import me.sunmc.clans.model.ClanMember;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+public class ClanAdminCommand extends Command {
+
+    private static final String PERM = "romclans.admin";
+    private final RomClans plugin;
+
+    public ClanAdminCommand(RomClans plugin) {
+        super("clanadmin");
+        this.plugin = plugin;
+        setDescription("RomClans admin command");
+        setPermission(PERM);
+    }
+
+    @Override
+    public boolean execute(@NotNull CommandSender sender, @NotNull String label, String @NotNull [] args) {
+        if (!sender.hasPermission(PERM)) {
+            sender.sendMessage(Component.text("No permission.", NamedTextColor.RED));
+            return true;
+        }
+        if (args.length == 0) {
+            sendHelp(sender, label);
+            return true;
+        }
+
+        switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "reload" -> {
+                plugin.getConfigManager().reload();
+                plugin.getMessagesManager().reload();
+                sender.sendMessage(Component.text("[RomClans] Reloaded config & messages.", NamedTextColor.GREEN));
+            }
+            case "disband" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(Component.text("Usage: /" + label + " disband <clan>", NamedTextColor.RED));
+                    return true;
+                }
+                String name = args[1];
+                plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
+                    Clan clan = plugin.getClanCache().getByName(name);
+                    if (clan == null) {
+                        sender.sendMessage(Component.text("Clan not found.", NamedTextColor.RED));
+                        return;
+                    }
+                    if (!(sender instanceof Player player)) {
+                        plugin.getClanManager().disbandClan(clan).thenRun(() ->
+                                sender.sendMessage(Component.text("[RomClans] Clan " + clan.getName() + " disbanded.", NamedTextColor.GREEN)));
+                        return;
+                    }
+                    plugin.getFoliaScheduler().entity(player, () -> openDisbandGui(player, clan));
+                });
+            }
+            case "info" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(Component.text("Usage: /" + label + " info <clan>", NamedTextColor.RED));
+                    return true;
+                }
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(Component.text("Console: use /clan info instead.", NamedTextColor.YELLOW));
+                    return true;
+                }
+                String name = args[1];
+                plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
+                    Clan clan = plugin.getClanCache().getByName(name);
+                    if (clan == null) {
+                        player.sendMessage(Component.text("Clan not found.", NamedTextColor.RED));
+                        return;
+                    }
+                    plugin.getFoliaScheduler().entity(player, () ->
+                            ClanInfoGUI.open(player, clan, plugin, plugin.getGuiManager()));
+                });
+            }
+            default -> sendHelp(sender, label);
+        }
+        return true;
+    }
+
+    private void openDisbandGui(Player player, @NotNull Clan clan) {
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta sm = (SkullMeta) head.getItemMeta();
+        sm.setOwningPlayer(plugin.getServer().getOfflinePlayer(clan.getLeaderUuid()));
+        String ldrName = Optional.ofNullable(clan.getMember(clan.getLeaderUuid()))
+                .map(ClanMember::getPlayerName).orElse("Unknown");
+        sm.displayName(Component.text("Disband: " + clan.getName(), NamedTextColor.RED)
+                .decoration(TextDecoration.ITALIC, false));
+        sm.lore(List.of(
+                Component.text("Leader: " + ldrName, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                Component.text("Members: " + clan.getMemberCount(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                Component.empty(),
+                Component.text("⚠ This cannot be undone!", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false)
+        ));
+        head.setItemMeta(sm);
+
+        ConfirmGUI.open(player,
+                Component.text("Admin Disband: " + clan.getName(), NamedTextColor.DARK_RED),
+                head,
+                () -> plugin.getServer().getAsyncScheduler().runNow(plugin, t ->
+                        plugin.getClanManager().disbandClan(clan).thenRun(() ->
+                                player.sendMessage(Component.text("[RomClans] Clan " + clan.getName() + " disbanded.", NamedTextColor.GREEN)))),
+                plugin.getGuiManager());
+    }
+
+    private void sendHelp(@NotNull CommandSender s, String label) {
+        s.sendMessage(Component.text()
+                .append(Component.text("[RomClans Admin]\n", NamedTextColor.GOLD))
+                .append(Component.text("/" + label + " reload\n", NamedTextColor.YELLOW))
+                .append(Component.text("/" + label + " disband <clan>\n", NamedTextColor.YELLOW))
+                .append(Component.text("/" + label + " info <clan>", NamedTextColor.YELLOW))
+                .build());
+    }
+
+    @Override
+    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias,
+                                             String @NotNull [] args, Location loc) {
+        if (!sender.hasPermission(PERM)) return List.of();
+        if (args.length == 1) return Stream.of("reload", "disband", "info")
+                .filter(s -> s.startsWith(args[0].toLowerCase())).toList();
+        if (args.length == 2 && !args[0].equalsIgnoreCase("reload"))
+            return plugin.getClanCache().getAll().stream()
+                    .map(Clan::getName)
+                    .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .toList();
+        return List.of();
+    }
+}

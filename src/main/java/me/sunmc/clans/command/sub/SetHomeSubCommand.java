@@ -20,17 +20,13 @@ public class SetHomeSubCommand implements SubCommand {
     @Override
     public void execute(@NotNull Player player, String[] args) {
         Clan clan = plugin.getClanManager().getPlayerClan(player.getUniqueId());
-
         if (!clan.isLeader(player.getUniqueId())) {
             plugin.getMessagesManager().send(player, "home-set-not-leader");
             return;
         }
-
-        // Player location must be read on their owning region thread
         plugin.getFoliaScheduler().entity(player, () -> {
             Location loc = player.getLocation();
-            clan.setHome(loc);
-            plugin.getDatabase().updateClanHome(clan.getId(), loc).thenRun(() ->
+            plugin.getClanManager().setHome(clan, loc).thenRun(() ->
                     plugin.getMessagesManager().send(player, "home-set"));
         });
     }

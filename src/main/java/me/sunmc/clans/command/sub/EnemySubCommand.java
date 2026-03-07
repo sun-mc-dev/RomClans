@@ -87,9 +87,19 @@ public class EnemySubCommand implements SubCommand {
     public List<String> tabComplete(Player p, String @NotNull [] a) {
         if (a.length == 1) return List.of("add", "remove");
         if (a.length == 2) {
+            Clan clan = plugin.getClanManager().getPlayerClan(p.getUniqueId());
+            String partial = a[1].toLowerCase();
+            if ("remove".equalsIgnoreCase(a[0]) && clan != null) {
+                return clan.getEnemyIds().stream()
+                        .map(id -> plugin.getClanCache().getById(id))
+                        .filter(java.util.Objects::nonNull)
+                        .map(Clan::getName)
+                        .filter(n -> n.toLowerCase().startsWith(partial))
+                        .toList();
+            }
             return plugin.getClanCache().getAll().stream()
                     .map(Clan::getName)
-                    .filter(n -> n.toLowerCase().startsWith(a[1].toLowerCase()))
+                    .filter(n -> n.toLowerCase().startsWith(partial))
                     .toList();
         }
         return List.of();

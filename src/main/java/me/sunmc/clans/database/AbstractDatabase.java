@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import me.sunmc.clans.RomClans;
 import me.sunmc.clans.model.Clan;
 import me.sunmc.clans.model.ClanMember;
+import me.sunmc.clans.model.ClanRank;
 import me.sunmc.clans.model.RelationType;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
@@ -15,10 +16,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Holds all JDBC logic shared between SQLite and MySQL.
- * Subclasses only configure HikariCP and supply dialect DDL.
- */
 public abstract class AbstractDatabase implements Database {
 
     protected final RomClans plugin;
@@ -35,6 +32,13 @@ public abstract class AbstractDatabase implements Database {
     protected abstract String ddlMembers();
 
     protected abstract String ddlRelations();
+
+    protected abstract String ddlKnownPlayers();
+
+    /**
+     * SQL for upsert into known_players(uuid, name, last_seen). Dialect-specific.
+     */
+    protected abstract String upsertPlayerSql();
 
     protected <T> CompletableFuture<T> async(ThrowingSupplier<T> s) {
         return CompletableFuture.supplyAsync(() -> {
@@ -64,8 +68,25 @@ public abstract class AbstractDatabase implements Database {
                 st.execute(ddlClans());
                 st.execute(ddlMembers());
                 st.execute(ddlRelations());
+                st.execute(ddlKnownPlayers());
+                runMigrations(c);
             }
         });
+    }
+
+    /**
+     * Adds columns introduced after the initial schema. Failures are silently ignored (column exists).
+     */
+    protected void runMigrations(Connection c) {
+        String[] stmts = {
+                "ALTER TABLE clans ADD COLUMN home_server_id TEXT"
+        };
+        for (String sql : stmts) {
+            try (Statement st = c.createStatement()) {
+                st.execute(sql);
+            } catch (SQLException ignored) {
+            }
+        }
     }
 
     @Override
@@ -100,8 +121,7 @@ public abstract class AbstractDatabase implements Database {
                  PreparedStatement ps = conn.prepareStatement("SELECT * FROM clans WHERE id=?")) {
                 ps.setString(1, id.toString());
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) return Optional.empty();
-                    return Optional.of(mapClan(rs));
+                    return rs.next() ? Optional.of(mapClan(rs)) : Optional.empty();
                 }
             }
         });
@@ -114,8 +134,7 @@ public abstract class AbstractDatabase implements Database {
                  PreparedStatement ps = conn.prepareStatement("SELECT * FROM clans WHERE name=?")) {
                 ps.setString(1, name);
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) return Optional.empty();
-                    return Optional.of(mapClan(rs));
+                    return rs.next() ? Optional.of(mapClan(rs)) : Optional.empty();
                 }
             }
         });
@@ -129,8 +148,7 @@ public abstract class AbstractDatabase implements Database {
                          "SELECT c.* FROM clans c JOIN clan_members m ON c.id=m.clan_id WHERE m.player_uuid=?")) {
                 ps.setString(1, playerUuid.toString());
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) return Optional.empty();
-                    return Optional.of(mapClan(rs));
+                    return rs.next() ? Optional.of(mapClan(rs)) : Optional.empty();
                 }
             }
         });
@@ -145,7 +163,6 @@ public abstract class AbstractDatabase implements Database {
                  ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapClan(rs));
             }
-            // Load members and relations for each clan
             for (Clan clan : list) {
                 loadMembers(clan);
                 loadRelations(clan);
@@ -171,18 +188,19 @@ public abstract class AbstractDatabase implements Database {
     }
 
     @Override
-    public CompletableFuture<Void> updateClanHome(UUID clanId, Location loc) {
+    public CompletableFuture<Void> updateClanHome(UUID clanId, Location loc, String serverId) {
         return asyncVoid(() -> {
             try (Connection conn = ds.getConnection();
                  PreparedStatement ps = conn.prepareStatement(
-                         "UPDATE clans SET home_world=?,home_x=?,home_y=?,home_z=?,home_yaw=?,home_pitch=?,home_set=1 WHERE id=?")) {
+                         "UPDATE clans SET home_world=?,home_x=?,home_y=?,home_z=?,home_yaw=?,home_pitch=?,home_set=1,home_server_id=? WHERE id=?")) {
                 ps.setString(1, loc.getWorld().getName());
                 ps.setDouble(2, loc.getX());
                 ps.setDouble(3, loc.getY());
                 ps.setDouble(4, loc.getZ());
                 ps.setFloat(5, loc.getYaw());
                 ps.setFloat(6, loc.getPitch());
-                ps.setString(7, clanId.toString());
+                ps.setString(7, serverId);
+                ps.setString(8, clanId.toString());
                 ps.executeUpdate();
             }
         });
@@ -284,15 +302,38 @@ public abstract class AbstractDatabase implements Database {
         });
     }
 
+    @Override
+    public CompletableFuture<Void> upsertPlayer(UUID uuid, String name) {
+        return asyncVoid(() -> {
+            try (Connection conn = ds.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(upsertPlayerSql())) {
+                ps.setString(1, uuid.toString());
+                ps.setString(2, name);
+                ps.setLong(3, System.currentTimeMillis());
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<Optional<UUID>> findPlayerUuidByName(String name) {
+        return async(() -> {
+            try (Connection conn = ds.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(
+                         "SELECT uuid FROM known_players WHERE LOWER(name)=LOWER(?)")) {
+                ps.setString(1, name);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? Optional.of(UUID.fromString(rs.getString("uuid"))) : Optional.empty();
+                }
+            }
+        });
+    }
+
     private @NotNull Clan mapClan(@NotNull ResultSet rs) throws SQLException {
         Clan c = new Clan(
-                UUID.fromString(rs.getString("id")),
-                rs.getString("name"),
-                rs.getString("tag"),
-                UUID.fromString(rs.getString("leader_uuid")),
-                rs.getBoolean("friendly_fire"),
-                rs.getLong("created_at")
-        );
+                UUID.fromString(rs.getString("id")), rs.getString("name"), rs.getString("tag"),
+                UUID.fromString(rs.getString("leader_uuid")), rs.getBoolean("friendly_fire"),
+                rs.getLong("created_at"));
         c.setHomeSet(rs.getBoolean("home_set"));
         if (c.isHomeSet()) {
             c.setHomeWorld(rs.getString("home_world"));
@@ -301,54 +342,44 @@ public abstract class AbstractDatabase implements Database {
             c.setHomeZ(rs.getDouble("home_z"));
             c.setHomeYaw(rs.getFloat("home_yaw"));
             c.setHomePitch(rs.getFloat("home_pitch"));
+            c.setHomeServerId(rs.getString("home_server_id"));
         }
         return c;
     }
 
     private void loadMembers(@NotNull Clan clan) throws SQLException {
         try (Connection conn = ds.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "SELECT * FROM clan_members WHERE clan_id=?")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT * FROM clan_members WHERE clan_id=?")) {
             ps.setString(1, clan.getId().toString());
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    clan.addMember(new me.sunmc.clans.model.ClanMember(
-                            UUID.fromString(rs.getString("player_uuid")),
-                            rs.getString("player_name"),
-                            me.sunmc.clans.model.ClanRank.valueOf(rs.getString("rank")),
-                            rs.getLong("joined_at")
-                    ));
-                }
+                while (rs.next()) clan.addMember(new ClanMember(
+                        UUID.fromString(rs.getString("player_uuid")), rs.getString("player_name"),
+                        ClanRank.valueOf(rs.getString("rank")), rs.getLong("joined_at")));
             }
         }
     }
 
     private void loadRelations(@NotNull Clan clan) throws SQLException {
         try (Connection conn = ds.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "SELECT * FROM clan_relations WHERE clan_id=?")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT * FROM clan_relations WHERE clan_id=?")) {
             ps.setString(1, clan.getId().toString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     UUID target = UUID.fromString(rs.getString("target_clan_id"));
-                    RelationType type = RelationType.valueOf(rs.getString("type"));
-                    switch (type) {
+                    switch (me.sunmc.clans.model.RelationType.valueOf(rs.getString("type"))) {
                         case ALLY -> clan.addAlly(target);
                         case ENEMY -> clan.addEnemy(target);
-                        case ALLY_REQUEST -> clan.addPendingAllyReq(target); // WE sent a request to target
+                        case ALLY_REQUEST -> clan.addPendingAllyReq(target);
                     }
                 }
             }
         }
-        // Load incoming requests (other clans pointing to us)
         try (Connection conn = ds.getConnection();
              PreparedStatement ps = conn.prepareStatement(
                      "SELECT clan_id FROM clan_relations WHERE target_clan_id=? AND type='ALLY_REQUEST'")) {
             ps.setString(1, clan.getId().toString());
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    clan.addPendingAllyReq(UUID.fromString(rs.getString("clan_id")));
-                }
+                while (rs.next()) clan.addPendingAllyReq(UUID.fromString(rs.getString("clan_id")));
             }
         }
     }

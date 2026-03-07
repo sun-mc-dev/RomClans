@@ -23,6 +23,7 @@ public class Clan {
     private String tag;           // raw MiniMessage string
     private UUID leaderUuid;
     private boolean friendlyFire;
+    private String homeServerId;
     private String homeWorld;
     private double homeX, homeY, homeZ;
     private float homeYaw, homePitch;
@@ -95,6 +96,10 @@ public class Clan {
 
     public Set<UUID> getAllyIds() {
         return Collections.unmodifiableSet(allyIds);
+    }
+
+    public Set<UUID> getPendingAllyReqs() {
+        return Collections.unmodifiableSet(pendingAllyReqs);
     }
 
     public void addEnemy(UUID clanId) {
@@ -235,5 +240,13 @@ public class Clan {
 
     public void setHomePitch(float v) {
         this.homePitch = v;
+    }
+
+    public String getHomeServerId() {
+        return homeServerId;
+    }
+
+    public void setHomeServerId(String v) {
+        this.homeServerId = v;
     }
 }

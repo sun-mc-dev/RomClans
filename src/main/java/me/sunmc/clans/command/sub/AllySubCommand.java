@@ -138,10 +138,32 @@ public class AllySubCommand implements SubCommand {
     public List<String> tabComplete(Player p, String @NotNull [] a) {
         if (a.length == 1) return List.of("add", "accept", "deny", "remove");
         if (a.length == 2) {
-            return plugin.getClanCache().getAll().stream()
-                    .map(Clan::getName)
-                    .filter(n -> n.toLowerCase().startsWith(a[1].toLowerCase()))
-                    .toList();
+            Clan clan = plugin.getClanManager().getPlayerClan(p.getUniqueId());
+            String partial = a[1].toLowerCase();
+            return switch (a[0].toLowerCase()) {
+                case "accept", "deny" -> {
+                    if (clan == null) yield List.of();
+                    yield clan.getPendingAllyReqs().stream()
+                            .map(id -> plugin.getClanCache().getById(id))
+                            .filter(java.util.Objects::nonNull)
+                            .map(Clan::getName)
+                            .filter(n -> n.toLowerCase().startsWith(partial))
+                            .toList();
+                }
+                case "remove" -> {
+                    if (clan == null) yield List.of();
+                    yield clan.getAllyIds().stream()
+                            .map(id -> plugin.getClanCache().getById(id))
+                            .filter(java.util.Objects::nonNull)
+                            .map(Clan::getName)
+                            .filter(n -> n.toLowerCase().startsWith(partial))
+                            .toList();
+                }
+                default -> plugin.getClanCache().getAll().stream()
+                        .map(Clan::getName)
+                        .filter(n -> n.toLowerCase().startsWith(partial))
+                        .toList();
+            };
         }
         return List.of();
     }

@@ -6,6 +6,8 @@ import me.sunmc.clans.config.ConfigManager;
 import me.sunmc.clans.config.MessagesManager;
 import me.sunmc.clans.database.Database;
 import me.sunmc.clans.database.DatabaseManager;
+import me.sunmc.clans.database.impl.redis.RedisManager;
+import me.sunmc.clans.gui.GUIManager;
 import me.sunmc.clans.listener.FriendlyFireListener;
 import me.sunmc.clans.listener.PlayerChatListener;
 import me.sunmc.clans.listener.PlayerJoinQuitListener;
@@ -14,7 +16,6 @@ import me.sunmc.clans.manager.ClanManager;
 import me.sunmc.clans.manager.InviteManager;
 import me.sunmc.clans.manager.RelationManager;
 import me.sunmc.clans.placeholder.ClansPlaceholderExpansion;
-import me.sunmc.clans.database.impl.redis.RedisManager;
 import me.sunmc.clans.util.FoliaScheduler;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,6 +36,7 @@ public final class RomClans extends JavaPlugin {
     private InviteManager inviteManager;
     private RelationManager relationManager;
     private ChatManager chatManager;
+    private GUIManager guiManager;
     private FoliaScheduler foliaScheduler;
     private ExecutorService dbExecutor;
 
@@ -79,6 +81,7 @@ public final class RomClans extends JavaPlugin {
         inviteManager = new InviteManager(this);
         relationManager = new RelationManager(this);
         chatManager = new ChatManager(this);
+        guiManager = new GUIManager();
 
         try {
             clanManager.loadAll().join();
@@ -91,6 +94,7 @@ public final class RomClans extends JavaPlugin {
         getServer().getCommandMap().register(getName().toLowerCase(), cmd);
 
         var pm = getServer().getPluginManager();
+        pm.registerEvents(guiManager, this);
         pm.registerEvents(new PlayerChatListener(this), this);
         pm.registerEvents(new PlayerJoinQuitListener(this), this);
         pm.registerEvents(new FriendlyFireListener(this), this);
@@ -152,6 +156,10 @@ public final class RomClans extends JavaPlugin {
 
     public ChatManager getChatManager() {
         return chatManager;
+    }
+
+    public GUIManager getGuiManager() {
+        return guiManager;
     }
 
     public FoliaScheduler getFoliaScheduler() {

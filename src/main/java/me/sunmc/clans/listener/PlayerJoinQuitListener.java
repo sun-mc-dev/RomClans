@@ -21,23 +21,23 @@ public class PlayerJoinQuitListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(@NotNull PlayerJoinEvent event) {
         var player = event.getPlayer();
+        // Persist UUID↔name for cross-server invite lookup
+        plugin.getServer().getAsyncScheduler().runNow(plugin,
+                t -> plugin.getDatabase().upsertPlayer(player.getUniqueId(), player.getName()));
+
         Clan clan = plugin.getClanManager().getPlayerClan(player.getUniqueId());
         if (clan == null) return;
-
         ClanMember member = clan.getMember(player.getUniqueId());
         if (member == null) return;
-
-        // Keep cached player name in sync with current name (handles name changes)
         if (!member.getPlayerName().equals(player.getName())) {
             member.setPlayerName(player.getName());
             plugin.getServer().getAsyncScheduler().runNow(plugin,
-                    task -> plugin.getDatabase().updateMember(clan.getId(), member));
+                    t -> plugin.getDatabase().updateMember(clan.getId(), member));
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(@NotNull PlayerQuitEvent event) {
-        // Always reset chat mode on disconnect so they re-enter in GLOBAL
         plugin.getChatManager().resetMode(event.getPlayer().getUniqueId());
     }
 }

@@ -79,7 +79,13 @@ public class HomeSubCommand implements SubCommand {
     private void doTeleport(Player player, @NotNull Clan clan) {
         Location dest = clan.buildHomeLocation(plugin.getServer());
         if (dest == null) {
-            plugin.getMessagesManager().send(player, "home-world-missing");
+            String homeServer = clan.getHomeServerId();
+            String thisServer = plugin.getConfigManager().getServerId();
+            if (homeServer != null && !homeServer.equals(thisServer)) {
+                plugin.getMessagesManager().send(player, "home-wrong-server", Map.of("server", homeServer));
+            } else {
+                plugin.getMessagesManager().send(player, "home-world-missing");
+            }
             return;
         }
         player.teleportAsync(dest).thenAccept(success -> {

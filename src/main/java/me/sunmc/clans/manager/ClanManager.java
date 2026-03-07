@@ -4,6 +4,7 @@ import me.sunmc.clans.RomClans;
 import me.sunmc.clans.model.Clan;
 import me.sunmc.clans.model.ClanMember;
 import me.sunmc.clans.model.ClanRank;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -17,9 +18,6 @@ public class ClanManager {
         this.plugin = plugin;
     }
 
-    /**
-     * Load all clans + members + relations from DB into cache.
-     */
     public CompletableFuture<Void> loadAll() {
         return plugin.getDatabase().findAllClans().thenAccept(clans -> {
             plugin.getClanCache().clear();
@@ -40,101 +38,110 @@ public class ClanManager {
         return plugin.getClanCache().getById(id);
     }
 
-    /**
-     * Create a new clan; updates cache and DB.
-     */
     public CompletableFuture<Clan> createClan(String name, String tag, UUID leaderUuid, String leaderName) {
-        Clan clan = new Clan(
-                UUID.randomUUID(), name, tag, leaderUuid,
-                plugin.getConfigManager().isFriendlyFireDefault(), System.currentTimeMillis()
-        );
+        Clan clan = new Clan(UUID.randomUUID(), name, tag, leaderUuid,
+                plugin.getConfigManager().isFriendlyFireDefault(), System.currentTimeMillis());
         ClanMember leader = new ClanMember(leaderUuid, leaderName, ClanRank.LEADER, System.currentTimeMillis());
         clan.addMember(leader);
-
         return plugin.getDatabase().insertClan(clan)
                 .thenCompose(v -> plugin.getDatabase().insertMember(clan.getId(), leader))
                 .thenApply(v -> {
                     plugin.getClanCache().add(clan);
+                    // Broadcast to other servers, so they pick up the new clan
+                    if (plugin.getRedisManager().isActive())
+                        plugin.getRedisManager().publishCacheInvalidate(clan.getId().toString());
                     return clan;
                 });
     }
 
-    /**
-     * Disband a clan; removes from cache and DB.
-     */
     public CompletableFuture<Void> disbandClan(@NotNull Clan clan) {
+        // Reset chat modes for members on this server before removing from cache
+        clan.getMembers().keySet().forEach(plugin.getChatManager()::resetMode);
         plugin.getClanCache().remove(clan.getId());
-        // Notify RelationManager to clean up ally/enemy references from other clans
         plugin.getClanCache().getAll().forEach(other -> {
             other.removeAlly(clan.getId());
             other.removeEnemy(clan.getId());
             other.removePendingAllyReq(clan.getId());
         });
+        if (plugin.getRedisManager().isActive())
+            plugin.getRedisManager().publishDisband(clan.getId().toString());
         return plugin.getDatabase().deleteAllRelationsForClan(clan.getId())
                 .thenCompose(v -> plugin.getDatabase().deleteClan(clan.getId()));
     }
 
-    /**
-     * Add a player to a clan.
-     */
     public CompletableFuture<Void> addMember(@NotNull Clan clan, UUID playerUuid, String playerName) {
         ClanMember member = new ClanMember(playerUuid, playerName, ClanRank.MEMBER, System.currentTimeMillis());
         clan.addMember(member);
         plugin.getClanCache().addPlayerToIndex(playerUuid, clan.getId());
-        return plugin.getDatabase().insertMember(clan.getId(), member);
+        return plugin.getDatabase().insertMember(clan.getId(), member).thenRun(() -> {
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishMemberAdd(clan.getId().toString(),
+                        playerUuid.toString(), playerName, ClanRank.MEMBER.name());
+        });
     }
 
-    /**
-     * Remove a player from a clan.
-     */
     public CompletableFuture<Void> removeMember(@NotNull Clan clan, UUID playerUuid) {
         clan.removeMember(playerUuid);
         plugin.getClanCache().removePlayerFromIndex(playerUuid);
-        return plugin.getDatabase().deleteMember(clan.getId(), playerUuid);
+        return plugin.getDatabase().deleteMember(clan.getId(), playerUuid).thenRun(() -> {
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishMemberRemove(clan.getId().toString(), playerUuid.toString());
+        });
     }
 
-    /**
-     * Update a member's rank in cache and DB.
-     */
     public CompletableFuture<Void> updateMemberRank(@NotNull Clan clan, UUID playerUuid, ClanRank newRank) {
         ClanMember m = clan.getMember(playerUuid);
         if (m == null) return CompletableFuture.completedFuture(null);
         m.setRank(newRank);
-        return plugin.getDatabase().updateMember(clan.getId(), m);
+        return plugin.getDatabase().updateMember(clan.getId(), m).thenRun(() -> {
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishRankUpdate(clan.getId().toString(),
+                        playerUuid.toString(), newRank.name());
+        });
     }
 
-    /**
-     * Toggle friendly fire.
-     */
     public CompletableFuture<Void> toggleFriendlyFire(@NotNull Clan clan) {
         clan.setFriendlyFire(!clan.isFriendlyFire());
-        return plugin.getDatabase().updateClan(clan);
+        return plugin.getDatabase().updateClan(clan).thenRun(() -> {
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishFriendlyFireToggle(clan.getId().toString(), clan.isFriendlyFire());
+        });
     }
 
-    /**
-     * Transfer leadership.
-     */
     public CompletableFuture<Void> transferLeadership(@NotNull Clan clan, UUID newLeader) {
         UUID oldLeader = clan.getLeaderUuid();
-        // Demote old leader to CO_LEADER
-        ClanMember oldLeaderMember = clan.getMember(oldLeader);
-        if (oldLeaderMember != null) oldLeaderMember.setRank(ClanRank.CO_LEADER);
-        // Promote new leader
-        ClanMember newLeaderMember = clan.getMember(newLeader);
-        if (newLeaderMember != null) newLeaderMember.setRank(ClanRank.LEADER);
+        ClanMember om = clan.getMember(oldLeader);
+        if (om != null) om.setRank(ClanRank.CO_LEADER);
+        ClanMember nm = clan.getMember(newLeader);
+        if (nm != null) nm.setRank(ClanRank.LEADER);
         clan.setLeaderUuid(newLeader);
-
         return plugin.getDatabase().updateClan(clan)
-                .thenCompose(v -> oldLeaderMember != null
-                        ? plugin.getDatabase().updateMember(clan.getId(), oldLeaderMember)
-                        : CompletableFuture.completedFuture(null))
-                .thenCompose(v -> newLeaderMember != null
-                        ? plugin.getDatabase().updateMember(clan.getId(), newLeaderMember)
-                        : CompletableFuture.completedFuture(null));
+                .thenCompose(v -> om != null ? plugin.getDatabase().updateMember(clan.getId(), om) : CompletableFuture.completedFuture(null))
+                .thenCompose(v -> nm != null ? plugin.getDatabase().updateMember(clan.getId(), nm) : CompletableFuture.completedFuture(null))
+                .thenRun(() -> {
+                    if (plugin.getRedisManager().isActive())
+                        plugin.getRedisManager().publishTransfer(clan.getId().toString(),
+                                newLeader.toString(), oldLeader.toString());
+                });
     }
 
     public CompletableFuture<Void> retag(@NotNull Clan clan, String newTag) {
         clan.setTag(newTag);
-        return plugin.getDatabase().updateClan(clan);
+        return plugin.getDatabase().updateClan(clan).thenRun(() -> {
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishRetag(clan.getId().toString(), newTag);
+        });
+    }
+
+    public CompletableFuture<Void> setHome(@NotNull Clan clan, @NotNull Location loc) {
+        clan.setHome(loc);
+        clan.setHomeServerId(plugin.getConfigManager().getServerId());
+        String serverId = plugin.getConfigManager().getServerId();
+        return plugin.getDatabase().updateClanHome(clan.getId(), loc, serverId).thenRun(() -> {
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishHomeSet(clan.getId().toString(),
+                        loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(),
+                        loc.getYaw(), loc.getPitch());
+        });
     }
 }

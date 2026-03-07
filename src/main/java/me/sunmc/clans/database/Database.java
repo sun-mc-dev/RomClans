@@ -11,7 +11,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public interface Database {
-
     CompletableFuture<Void> initialize();
 
     CompletableFuture<Void> insertClan(Clan clan);
@@ -26,7 +25,10 @@ public interface Database {
 
     CompletableFuture<Void> updateClan(Clan clan);
 
-    CompletableFuture<Void> updateClanHome(UUID clanId, Location loc);
+    /**
+     * serverId is the config server-id of the server where home was set.
+     */
+    CompletableFuture<Void> updateClanHome(UUID clanId, Location loc, String serverId);
 
     CompletableFuture<Void> deleteClan(UUID clanId);
 
@@ -41,6 +43,16 @@ public interface Database {
     CompletableFuture<Void> deleteRelation(UUID clanId, UUID targetId);
 
     CompletableFuture<Void> deleteAllRelationsForClan(UUID clanId);
+
+    /**
+     * Upsert a player record so cross-server invite can resolve UUID by name.
+     */
+    CompletableFuture<Void> upsertPlayer(UUID uuid, String name);
+
+    /**
+     * Returns empty if the player has never connected to any server in the network.
+     */
+    CompletableFuture<Optional<UUID>> findPlayerUuidByName(String name);
 
     CompletableFuture<Void> close();
 }
