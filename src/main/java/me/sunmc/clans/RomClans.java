@@ -1,6 +1,7 @@
 package me.sunmc.clans;
 
 import me.sunmc.clans.cache.ClanCache;
+import me.sunmc.clans.command.ClanAdminCommand;
 import me.sunmc.clans.command.ClanCommand;
 import me.sunmc.clans.config.ConfigManager;
 import me.sunmc.clans.config.MessagesManager;
@@ -92,6 +93,9 @@ public final class RomClans extends JavaPlugin {
         String alias = configManager.getCommandAlias();
         ClanCommand cmd = new ClanCommand(alias, this);
         getServer().getCommandMap().register(getName().toLowerCase(), cmd);
+
+        ClanAdminCommand adminCmd = new ClanAdminCommand(this);
+        getServer().getCommandMap().register(getName().toLowerCase(), adminCmd);
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(guiManager, this);

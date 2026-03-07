@@ -14,6 +14,8 @@ create-invalid-name: "{prefix} <red>Invalid name. Use 3-16 alphanumeric characte
 create-invalid-tag: "{prefix} <red>Invalid tag length. Visible text must be <min>-<max> characters."
 create-name-taken: "{prefix} <red>That clan name is already taken."
 create-success: "{prefix} <green>Clan <gold><name></gold> created!"
+create-usage: "{prefix} <red>Usage: /clan create <name> <tag>"
+create-name-reserved: "{prefix} <red>That name or tag is reserved and cannot be used."
 
 # Disband
 disband-not-leader: "{prefix} <red>Only the clan leader can disband the clan."
@@ -35,6 +37,10 @@ invite-already-sent: "{prefix} <red>You have already invited that player."
 invite-target-in-clan: "{prefix} <red>That player is already in a clan."
 invite-clan-full: "{prefix} <red>Your clan is full."
 invite-not-officer: "{prefix} <red>You must be an Officer or higher to invite players."
+invite-none-pending: "{prefix} <red>You have no pending clan invites."
+invite-list-header: "{prefix} <yellow>Your pending invites:"
+invite-list-entry: "{prefix} <gray>• <gold><clan></gold> — <white>/<cmd> accept <clan> <gray>| <white>/<cmd> deny <clan>"
+deny-all-success: "{prefix} <yellow>Denied <white><count></white> pending invite(s)."
 
 # Accept / Deny
 accept-success: "{prefix} <green>You have joined <gold><clan></gold>!"
@@ -136,3 +142,4 @@ home-teleporting: "{prefix} <yellow>Teleporting to clan home in <white><seconds>
 home-teleported: "{prefix} <green>Teleported to clan home!"
 home-moved: "{prefix} <red>Teleport cancelled — you moved!"
 home-world-missing: "{prefix} <red>The clan home world no longer exists."
+home-wrong-server: "{prefix} <red>Your clan home is set on server <yellow><server></yellow>. Connect there to use it."
