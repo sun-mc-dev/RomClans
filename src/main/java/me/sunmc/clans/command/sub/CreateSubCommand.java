@@ -23,7 +23,7 @@ public class CreateSubCommand implements SubCommand {
     private static final Set<String> RESERVED = Set.of(
             "admin", "administrator", "console", "server", "moderator", "mod", "owner",
             "operator", "op", "null", "undefined", "none", "clan", "clans", "help",
-            "minecraft", "plugin", "staff", "system"
+            "minecraft", "plugin", "staff", "system", "<name>", "<tag>"
     );
 
     private final RomClans plugin;
@@ -103,7 +103,7 @@ public class CreateSubCommand implements SubCommand {
     @Override
     public List<String> tabComplete(Player p, String @NotNull [] a) {
         if (a.length == 1) return List.of("<name>");
-        if (a.length == 2) return List.of("<tag — MiniMessage, e.g. <red>TAG>");
+        if (a.length == 2) return List.of("<tag>");
         return List.of();
     }
 

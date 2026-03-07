@@ -1,145 +1,389 @@
-prefix: "<gray>[<gold>Clans</gold>]</gray>"
+# ============================================================
+#  RomClans — Messages
+#  Plugin by SunMC
+#  Version of 0.1-alpha.1
+# ============================================================
+#
+#  Formatting: All messages support MiniMessage syntax.
+#  Reference:  https://docs.advntr.dev/minimessage/format.html
+#
+#  Common tags:
+#    <red>, <green>, <gold>, <yellow>, <aqua>, <white>, <gray>
+#    <bold>, <italic>, <underlined>, <strikethrough>
+#    <gradient:color1:color2>text</gradient>
+#    <rainbow>text</rainbow>
+#    <click:run_command:/clan info>text</click>
+#    <hover:show_text:'tooltip'>text</hover>
+#
+#  Placeholders: each message lists its available <placeholders>.
+#  {prefix} is replaced with the prefix value defined below.
+# ============================================================
 
-# General
+# Shown at the start of every plugin message.
+# Supports full MiniMessage formatting.
+prefix: "<gradient:#f55050:#f68902>ᴄʟᴀɴ »</gradient>"
+
+# ── General ──────────────────────────────────────────────────
+# Shown when a player lacks the required permission node.
 no-permission: "{prefix} <red>You don't have permission to do that."
+
+# Shown when a command requires the player to be in a clan, but they are not.
 not-in-clan: "{prefix} <red>You are not in a clan."
+
+# Shown when a player tries to create or join a clan while already in one.
 already-in-clan: "{prefix} <red>You are already in a clan."
+
+# Shown when a targeted player is not online on this server.
+# Placeholders: <player>
 player-not-found: "{prefix} <red>Player <yellow><player></yellow> is not online."
+
+# Shown when a clan name cannot be found in the cache.
+# Placeholders: <clan>
 clan-not-found: "{prefix} <red>Clan <yellow><clan></yellow> does not exist."
+
+# Generic fallback for unexpected internal errors.
 error: "{prefix} <red>An internal error occurred. Please contact an admin."
+
+# Shown when the console tries to run a player-only command.
 console-no-use: "Only players can use clan commands."
 
-# Create
+# ── Create (/clan create <name> <tag>) ───────────────────────
+# Shown when the name fails the regex or length check.
 create-invalid-name: "{prefix} <red>Invalid name. Use 3-16 alphanumeric characters or underscores."
+
+# Shown when the tag's visible length is outside the configured range.
+# Placeholders: <min>, <max>
 create-invalid-tag: "{prefix} <red>Invalid tag length. Visible text must be <min>-<max> characters."
+
+# Shown when the chosen clan name is already taken.
 create-name-taken: "{prefix} <red>That clan name is already taken."
+
+# Shown after successfully creating a clan.
+# Placeholders: <name>
 create-success: "{prefix} <green>Clan <gold><name></gold> created!"
+
+# Shown when the player runs /clan create with too few arguments.
 create-usage: "{prefix} <red>Usage: /clan create <name> <tag>"
+
+# Shown when the name or plain-text tag matches a reserved word.
 create-name-reserved: "{prefix} <red>That name or tag is reserved and cannot be used."
 
-# Disband
+# ── Disband (/clan disband) ───────────────────────────────────
+# Shown when a non-leader tries to disband.
 disband-not-leader: "{prefix} <red>Only the clan leader can disband the clan."
+
+# Shown to the leader after confirming to disband.
 disband-success: "{prefix} <red>Your clan has been disbanded."
+
+# Broadcast to all online members when the clan is disbanded.
 disband-notify: "{prefix} <red>Your clan has been disbanded by the leader."
 
-# FriendlyFire
+# ── Friendly Fire (/clan friendlyfire) ───────────────────────
+# Shown to the leader when friendly fire is turned on.
 ff-enabled: "{prefix} <green>Friendly fire is now <bold>enabled</bold>."
+
+# Shown to the leader when friendly fire is turned off.
 ff-disabled: "{prefix} <green>Friendly fire is now <bold>disabled</bold>."
+
+# Shown when a non-leader tries to toggle friendly fire.
 ff-not-leader: "{prefix} <red>Only the clan leader can toggle friendly fire."
+
+# Shown to an attacker when they hit a clan-mate and friendly fire is off.
 ff-blocked: "{prefix} <red>You cannot attack a clan-mate!"
 
-# Invite
+# ── Invite (/clan invite <player>) ───────────────────────────
+# Shown to the inviting officer after sending an invitation.
+# Placeholders: <player>
 invite-sent: "{prefix} <green>Invite sent to <yellow><player></yellow>."
+
+# Shown to the player who received the invite.
+# Placeholders: <player> (inviter name), <clan>, <cmd> (command alias)
 invite-received: "{prefix} <yellow><player></yellow> has invited you to join <gold><clan></gold>. Use <white>/<cmd> accept <clan></white> or <white>/<cmd> deny <clan></white>."
+
+# Shown when the player tries to accept/deny an invitation that does not exist.
+# Placeholders: <clan>
 invite-no-pending: "{prefix} <red>You have no pending invite from <yellow><clan></yellow>."
+
+# Shown when the player tries to accept an invitation that has expired.
 invite-expired: "{prefix} <red>That invite has expired."
+
+# Shown when the officer tries to re-invite a player who already has a pending invite.
 invite-already-sent: "{prefix} <red>You have already invited that player."
+
+# Shown when the invite target is already in a clan.
 invite-target-in-clan: "{prefix} <red>That player is already in a clan."
+
+# Shown when the clan has reached its max-members limit.
 invite-clan-full: "{prefix} <red>Your clan is full."
+
+# Shown when a member (below Officer rank) tries to invite.
 invite-not-officer: "{prefix} <red>You must be an Officer or higher to invite players."
+
+# Shown when /clan accept or /clan deny is run with no argument and no invites exist.
 invite-none-pending: "{prefix} <red>You have no pending clan invites."
+
+# Header shown when /clan accept or /clan deny is run with no argument and invites exist.
 invite-list-header: "{prefix} <yellow>Your pending invites:"
+
+# One line per pending invite in the list.
+# Placeholders: <clan>, <cmd>
 invite-list-entry: "{prefix} <gray>• <gold><clan></gold> — <white>/<cmd> accept <clan> <gray>| <white>/<cmd> deny <clan>"
+
+# Shown after /clan deny all successfully clears all invites.
+# Placeholders: <count>
 deny-all-success: "{prefix} <yellow>Denied <white><count></white> pending invite(s)."
 
-# Accept / Deny
+# ── Accept / Deny ─────────────────────────────────────────────
+# Shown to the player after successfully joining via /clan accept.
+# Placeholders: <clan>
 accept-success: "{prefix} <green>You have joined <gold><clan></gold>!"
+
+# Broadcast to online clan members when someone accepts an invitation.
+# Placeholders: <player>
 accept-notify: "{prefix} <green><player></green> has joined the clan!"
+
+# Shown to the player after denying an invitation.
+# Placeholders: <clan>
 deny-success: "{prefix} <yellow>You denied the invite from <gold><clan></gold>."
+
+# Shown to the inviter when their invite is denied.
+# Placeholders: <player>
 deny-notify: "{prefix} <yellow><player></yellow> denied your clan invite."
 
-# Leave
+# ── Leave (/clan leave) ───────────────────────────────────────
+# Shown to the player after successfully leaving.
+# Placeholders: <clan>
 leave-success: "{prefix} <yellow>You have left <gold><clan></gold>."
+
+# Broadcast to online clan members when someone leaves.
+# Placeholders: <player>
 leave-notify: "{prefix} <yellow><player></yellow> has left the clan."
+
+# Shown when the leader tries to leave without transferring first.
 leave-leader: "{prefix} <red>You are the leader. Transfer leadership first or use /clan disband."
 
-# Kick
+# ── Kick (/clan kick <player>) ────────────────────────────────
+# Shown to the officer who performed the kick.
+# Placeholders: <player>
 kick-success: "{prefix} <yellow><player></yellow> has been kicked from the clan."
+
+# Shown to the player who was kicked.
 kick-notify: "{prefix} <red>You have been kicked from the clan."
+
+# Shown when the target name is not found in the clan.
 kick-not-found: "{prefix} <red>That player is not in your clan."
+
+# Shown when the kicker tries to kick someone of equal or higher rank.
 kick-no-perm: "{prefix} <red>You cannot kick someone of equal or higher rank."
+
+# Shown when a player tries to kick themselves.
 kick-self: "{prefix} <red>You cannot kick yourself."
 
-# Promote / Demote
+# ── Promote / Demote (/clan promote|demote <player>) ──────────
+# Shown to the officer after promoting a member.
+# Placeholders: <player>, <rank>
 promote-success: "{prefix} <green><player></green> has been promoted to <gold><rank></gold>."
+
+# Shown to the player who was promoted.
+# Placeholders: <rank>
 promote-notify: "{prefix} <green>You have been promoted to <gold><rank></gold>."
+
+# Shown when trying to promote someone already at the max promotable rank (Officer).
 promote-max-rank: "{prefix} <red>That player is already at the highest promotable rank."
+
+# Shown to the officer after demoting a member.
+# Placeholders: <player>, <rank>
 demote-success: "{prefix} <yellow><player></yellow> has been demoted to <gold><rank></gold>."
+
+# Shown to the player who was demoted.
+# Placeholders: <rank>
 demote-notify: "{prefix} <yellow>You have been demoted to <gold><rank></gold>."
+
+# Shown when trying to demote someone already at Member (lowest rank).
 demote-min-rank: "{prefix} <red>That player cannot be demoted further."
+
+# Shown when the actor's rank is not high enough to manage the target.
 rank-no-perm: "{prefix} <red>You cannot manage someone of equal or higher rank."
 
-# Transfer
+# ── Transfer (/clan transfer <player>) ───────────────────────
+# Shown to the old leader after transferring.
+# Placeholders: <player>
 transfer-success: "{prefix} <green>Leadership transferred to <yellow><player></yellow>."
+
+# Shown to the new leader.
 transfer-notify: "{prefix} <gold>You are now the leader of the clan!"
+
+# Shown when a non-leader tries to transfer.
 transfer-not-leader: "{prefix} <red>Only the leader can transfer leadership."
 
-# Ally
+# ── Ally (/clan ally <add|accept|deny|remove> <clan>) ─────────
+# Shown to the sender after an ally request is sent.
+# Placeholders: <clan>
 ally-request-sent: "{prefix} <green>Alliance request sent to <gold><clan></gold>."
+
+# Shown to officers+ of the target clan when they receive a request.
+# Placeholders: <clan>, <cmd>
 ally-request-received: "{prefix} <gold><clan></gold> has sent an alliance request. Use <white>/<cmd> ally accept <clan></white>."
+
+# Shown to the acceptor after accepting an alliance.
+# Placeholders: <clan>
 ally-accept-success: "{prefix} <green>You are now allied with <gold><clan></gold>!"
+
+# Shown to the requester's officers+ when their request is accepted.
+# Placeholders: <clan>
 ally-accept-notify: "{prefix} <green><clan></clan> has accepted your alliance request!"
+
+# Shown to the denier after denying a request.
+# Placeholders: <clan>
 ally-deny-success: "{prefix} <yellow>You denied the alliance request from <gold><clan></gold>."
+
+# Shown to the requester's officers+ when their request is denied.
+# Placeholders: <clan>
 ally-deny-notify: "{prefix} <yellow><clan></clan> denied your alliance request."
+
+# Shown to the initiator after breaking an alliance.
+# Placeholders: <clan>
 ally-remove-success: "{prefix} <yellow>Alliance with <gold><clan></gold> has been broken."
+
+# Shown to the other clan's officers+ when the alliance is broken.
+# Placeholders: <clan>
 ally-remove-notify: "{prefix} <yellow><clan></clan> broke the alliance with you."
+
+# Shown when the two clans are already allied.
 ally-already: "{prefix} <red>You are already allied with that clan."
+
+# Shown when the clan has reached the max-allies limit.
 ally-max: "{prefix} <red>You have reached the maximum number of allies."
+
+# Shown when trying to accept/deny a request that doesn't exist.
+# Placeholders: <clan>
 ally-no-request: "{prefix} <red>No pending alliance request from <yellow><clan></yellow>."
+
+# Shown when trying to ally your own clan.
 ally-self: "{prefix} <red>You cannot ally your own clan."
+
+# Shown when a non-leader tries to manage alliances.
 ally-not-leader: "{prefix} <red>Only the leader can manage alliances."
+
+# Shown when trying to remove an alliance that doesn't exist.
+# Placeholders: <clan>
 ally-not-allied: "{prefix} <red>You are not allied with that clan."
 
-# Enemy
+# ── Enemy (/clan enemy <add|remove> <clan>) ───────────────────
+# Shown to the declarer after marking a clan as enemy.
+# Placeholders: <clan>
 enemy-add-success: "{prefix} <red>You have declared <gold><clan></gold> an enemy."
+
+# Broadcast to all online members of the target clan.
+# Placeholders: <clan>
 enemy-add-notify: "{prefix} <red><clan></clan> has declared your clan an enemy!"
+
+# Shown to the declarer after removing an enemy.
+# Placeholders: <clan>
 enemy-remove-success: "{prefix} <yellow><gold><clan></gold> is no longer your enemy."
+
+# Shown when the target is already an enemy.
 enemy-already: "{prefix} <red>That clan is already your enemy."
+
+# Shown when trying to remove a clan that is not an enemy.
+# Placeholders: <clan>
 enemy-not: "{prefix} <red>That clan is not your enemy."
+
+# Shown when trying to enemy your own clan.
 enemy-self: "{prefix} <red>You cannot declare your own clan as an enemy."
+
+# Shown when a non-leader tries to manage enemies.
 enemy-not-leader: "{prefix} <red>Only the leader can manage enemies."
+
+# Shown when the clan has reached the max-enemies limit.
 enemy-max: "{prefix} <red>You have reached the maximum number of enemies."
 
-# Chat
+# ── Chat (/clan chat) ─────────────────────────────────────────
+# Shown when the player cycles to Clan chat mode.
 chat-mode-clan: "{prefix} <green>Chat mode set to <gold>Clan</gold>."
+
+# Shown when the player cycles to Ally chat mode.
 chat-mode-ally: "{prefix} <green>Chat mode set to <aqua>Ally</aqua>."
+
+# Shown when the player cycles back to Global chat mode.
 chat-mode-global: "{prefix} <green>Chat mode set to <white>Global</white>."
+
+# Shown when a player not in a clan tries to enter ally chat mode.
 chat-not-in-clan-for-ally: "{prefix} <red>You must be in a clan to use ally chat."
+
+# Shown when a player in ally chat mode sends a message but the clan has no allies.
 chat-no-allies: "{prefix} <red>Your clan has no allies."
 
-# Chat format (use Adventure tags freely)
+# ── Chat Formats ──────────────────────────────────────────────
+# Format used for clan-only messages.
+# Placeholders: <tag> (raw MiniMessage clan tag), <player>, <message>
 chat-format-clan: "<dark_gray>[<gold>Clan</gold>]</dark_gray> <tag> <white><player></white><gray>:</gray> <white><message>"
+
+# Format used for ally chat messages (visible to own clan + all allied clans).
+# Placeholders: <tag>, <player>, <message>
 chat-format-ally: "<dark_gray>[<aqua>Ally</aqua>]</dark_gray> <tag> <white><player></white><gray>:</gray> <white><message>"
 
-# Info
+# ── Info (/clan info [clan]) ──────────────────────────────────
+# These are kept for potential future fallback text rendering.
+# In-game the /clan info command opens a GUI instead.
+# Placeholders: <name>
 info-header: "<gold><bold>— Clan: <name> —"
 info-tag: "<gray>Tag:</gray> <tag>"
 info-leader: "<gray>Leader:</gray> <yellow><leader>"
+# Placeholders: <count>, <max>
 info-members: "<gray>Members:</gray> <yellow><count>/<max>"
+# Placeholders: <allies> (comma-separated list or "None")
 info-allies: "<gray>Allies:</gray> <yellow><allies>"
+# Placeholders: <enemies>
 info-enemies: "<gray>Enemies:</gray> <yellow><enemies>"
+# Placeholders: <ff> ("Enabled" / "Disabled")
 info-ff: "<gray>Friendly Fire:</gray> <yellow><ff>"
+# Placeholders: <date> (yyyy-MM-dd)
 info-created: "<gray>Created:</gray> <yellow><date>"
 
-# Members
+# ── Members (/clan members [clan]) ───────────────────────────
+# Placeholders: <name>
 members-header: "<gold><bold>— Members of <name> —"
+# Placeholders: <player>, <rank>
 members-entry: " <gray>-</gray> <yellow><player></yellow> <gray>(<rank>)</gray>"
 
-# List
+# ── List (/clan list) ─────────────────────────────────────────
 list-header: "<gold><bold>— All Clans —"
+# Placeholders: <tag>, <name>, <members>
 list-entry: " <gray>-</gray> <tag> <yellow><name></yellow> <gray>(<members> members)</gray>"
 list-empty: "{prefix} <gray>No clans exist yet."
 
-# Retag
+# ── Retag (/clan retag <tag>) ─────────────────────────────────
+# Shown after successfully changing the clan tag.
+# Placeholders: <tag> (new raw MiniMessage tag)
 retag-success: "{prefix} <green>Clan tag updated to <tag>."
+
+# Shown when a non-leader tries to retag.
 retag-not-leader: "{prefix} <red>Only the leader can change the clan tag."
 
-# Home
+# ── Home (/clan home | /clan sethome) ────────────────────────
+# Shown to the leader after setting the clan home.
 home-set: "{prefix} <green>Clan home set to your current location."
+
+# Shown when a non-leader tries to set the home.
 home-set-not-leader: "{prefix} <red>Only the leader can set the clan home."
+
+# Shown when a player tries to teleport but no home has been set.
 home-not-set: "{prefix} <red>Your clan does not have a home set."
+
+# Shown during the countdown before teleporting.
+# Placeholders: <seconds>
 home-teleporting: "{prefix} <yellow>Teleporting to clan home in <white><seconds></white> seconds. Don't move!"
+
+# Shown after a successful teleport.
 home-teleported: "{prefix} <green>Teleported to clan home!"
+
+# Shown when the player moves during the teleport countdown.
 home-moved: "{prefix} <red>Teleport cancelled — you moved!"
+
+# Shown when the home world no longer exists on this server.
 home-world-missing: "{prefix} <red>The clan home world no longer exists."
+
+# Shown when the clan home is set on a different server in the network.
+# Placeholders: <server> (the server-id where the home is set)
 home-wrong-server: "{prefix} <red>Your clan home is set on server <yellow><server></yellow>. Connect there to use it."

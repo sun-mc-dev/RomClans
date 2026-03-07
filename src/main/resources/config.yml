@@ -1,45 +1,111 @@
 # ============================================================
 #  RomClans — Configuration
+#  Plugin by SunMC
+#  Version of 0.1-alpha.1
 # ============================================================
 
-# The command alias players use. Can be: clan, guild, team, etc.
+# The command alias players use to interact with clans.
+# Examples: clan, guild, team, faction
 command-alias: clan
 
+# ───────────────────────────────────────────────
+# ─────────────── Database ─────────────────
+# ───────────────────────────────────────────────
+# RomClans supports SQLite (single server) and MySQL (multiserver).
+#
+# SQLITE  — Zero setup. Data is stored in a local file inside the
+#           plugin folder. Not suitable for networks with multiple
+#           servers as each server would have its own isolated data.
+#
+# MYSQL   — Requires an external MySQL or MariaDB server. All Folia
+#           servers on the same network must point to the same database
+#           so clan data is shared across servers.
 database:
   # SQLITE or MYSQL
   type: SQLITE
+
   sqlite:
+    # File name relative to the RomClans plugin data folder.
     file: clans.db
+
   mysql:
     host: localhost
     port: 3306
     database: romclans
     username: root
     password: ''
+    # Number of connections in the HikariCP connection pool.
+    # Increase for larger servers. Rule of thumb: 2× your vCPU cores.
     pool-size: 10
+    # Whether to require SSL for the MySQL connection.
     use-ssl: false
 
+# ───────────────────────────────────────────────
+# ─────────────── Redis ─────────────────
+# ───────────────────────────────────────────────
+# Redis is optional but required for cross-server features such as:
+#   - Cross-server clan chat and ally chat
+#   - Cross-server invites
+#   - Rank, friendly fire, tag, home syncing across servers
+#   - Member add/remove/disband broadcasting
+#
+# If Redis is disabled, all features still work on a single server
+# but changes will not be reflected on other servers in real time.
 redis:
+  # Set to true to enable cross-server sync via Redis Pub/Sub.
   enabled: false
+
   host: localhost
   port: 6379
+
+  # Leave empty if your Redis instance has no password.
   password: ''
+
+  # Redis logical database index (0-15). Use 0 unless you share
+  # a Redis instance with other plugins.
   database: 0
-  # Unique identifier for THIS server (used to avoid echo-broadcasting)
+
+  # A unique identifier for THIS server in the network.
+  # Used internally to prevent a server from processing its own
+  # Redis broadcasts (echo prevention).
+  # Each server in your network MUST have a different server-id.
+  # Examples: server-1, folia-1, survival-1
   server-id: server-1
 
+# ───────────────────────────────────────────────
+# ─────────────── Clan Settings ─────────────────
+# ───────────────────────────────────────────────
 clans:
+  # Maximum and minimum character length for clan names.
+  # Names may only contain letters, numbers, and underscores.
   max-name-length: 16
   min-name-length: 3
-  # Refers to visible (plain-text) character count of the tag
+
+  # Maximum and minimum visible (plain-text) character length for
+  # clan tags. Tags support MiniMessage formatting (colors, gradients).
+  # The length check is applied to the stripped plain-text version.
   max-tag-length: 8
   min-tag-length: 2
+
+  # Maximum number of players allowed in a single clan.
   max-members: 50
+
+  # Maximum number of allied clans a clan can have.
   max-allies: 5
+
+  # Maximum number of enemy clans a clan can declare.
   max-enemies: 10
-  # Seconds to wait before teleporting to clan home (0 = instant)
+
+  # Seconds a player must stand still before being teleported to
+  # the clan home. Moving during the countdown cancels the teleport.
+  # Set to 0 for an instant teleport with no delay.
   home-teleport-delay: 3
-  # Whether friendly fire is enabled by default on clan creation
+
+  # Whether friendly fire (attacking clan-mates and allies) is
+  # enabled by default when a new clan is created.
+  # Leaders can toggle this per-clan with /clan friendlyfire.
   friendly-fire-default: false
-  # Seconds before a pending invite expires
+
+  # How long (in seconds) a clan invite remains valid before it
+  # expires automatically. Default is 300 seconds (5 minutes).
   invite-expiry: 300
