@@ -188,6 +188,12 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
 
             case "PLAYER_OFFLINE" -> plugin.getNetworkPlayerTracker()
                     .setOffline(UUID.fromString(j.get("uuid").getAsString()));
+
+            case "REQUEST_ONLINE_PLAYERS" -> {
+                for (Player p : plugin.getServer().getOnlinePlayers()) {
+                    plugin.getRedisManager().publishPlayerOnline(p.getUniqueId().toString());
+                }
+            }
         }
     }
 

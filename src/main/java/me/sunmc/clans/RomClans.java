@@ -23,6 +23,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public final class RomClans extends JavaPlugin {
@@ -74,7 +75,14 @@ public final class RomClans extends JavaPlugin {
 
         redisManager = new RedisManager(this);
         if (configManager.isRedisEnabled()) {
-            if (!redisManager.initialize()) {
+            if (redisManager.initialize()) {
+                // Ask other servers to re-broadcast their online players so
+                // NetworkPlayerTracker is populated immediately after a restart.
+                foliaScheduler.asyncDelayed(
+                        () -> redisManager.publishRequestOnlinePlayers(),
+                        1, TimeUnit.SECONDS
+                );
+            } else {
                 getLogger().warning("Redis connection failed — cross-server sync disabled.");
             }
         }

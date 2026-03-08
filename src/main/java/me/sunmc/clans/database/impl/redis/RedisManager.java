@@ -215,6 +215,15 @@ public class RedisManager {
         publish(CHAN_SYNC, o);
     }
 
+    /**
+     * Ask all other servers to re-broadcast their online players.
+     * Called once on enable so NetworkPlayerTracker is populated after a restart.
+     */
+    public void publishRequestOnlinePlayers() {
+        JsonObject o = base("REQUEST_ONLINE_PLAYERS");
+        publish(CHAN_SYNC, o);
+    }
+
     private @NotNull JsonObject base(String type) {
         JsonObject o = new JsonObject();
         o.addProperty("type", type);

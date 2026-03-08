@@ -78,13 +78,18 @@ public class AllySubCommand implements SubCommand {
     }
 
     private void handleAccept(Player player, @NotNull Clan clan, @NotNull Clan requester) {
-        // clan has received a request FROM requester
         if (!clan.hasPendingAllyReq(requester.getId())) {
             plugin.getMessagesManager().send(player, "ally-no-request",
                     Map.of("clan", requester.getName()));
             return;
         }
+
         if (clan.getAllyIds().size() >= plugin.getConfigManager().getMaxAllies()) {
+            plugin.getMessagesManager().send(player, "ally-max");
+            return;
+        }
+
+        if (requester.getAllyIds().size() >= plugin.getConfigManager().getMaxAllies()) {
             plugin.getMessagesManager().send(player, "ally-max");
             return;
         }
