@@ -28,12 +28,20 @@ public class RelationManager {
 
     /**
      * Clan {@code requester} sends an alliance request to clan {@code target}.
-     * In cache: target.addPendingAllyReq(requester.getId()) — "B has a pending request FROM A."
-     * In DB: insert (requester.id, target.id, ALLY_REQUEST).
+     * Persists to DB and notifies target-clan officers on remote servers via Redis. (Bug 8)
      */
     public CompletableFuture<Void> sendAllyRequest(@NotNull Clan requester, @NotNull Clan target) {
         target.addPendingAllyReq(requester.getId());
-        return plugin.getDatabase().insertRelation(requester.getId(), target.getId(), RelationType.ALLY_REQUEST);
+        return plugin.getDatabase()
+                .insertRelation(requester.getId(), target.getId(), RelationType.ALLY_REQUEST)
+                .thenRun(() -> {
+                    if (plugin.getRedisManager().isActive()) {
+                        plugin.getRedisManager().publishAllyRequest(
+                                requester.getId().toString(),
+                                requester.getName(),
+                                target.getId().toString());
+                    }
+                });
     }
 
     /**

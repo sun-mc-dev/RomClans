@@ -21,9 +21,12 @@ public class PlayerJoinQuitListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(@NotNull PlayerJoinEvent event) {
         var player = event.getPlayer();
-        // Persist UUID↔name for cross-server invite lookup
-        plugin.getServer().getAsyncScheduler().runNow(plugin,
-                t -> plugin.getDatabase().upsertPlayer(player.getUniqueId(), player.getName()));
+        plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
+            plugin.getDatabase().upsertPlayer(player.getUniqueId(), player.getName());
+
+            if (plugin.getRedisManager().isActive())
+                plugin.getRedisManager().publishPlayerOnline(player.getUniqueId().toString());
+        });
 
         Clan clan = plugin.getClanManager().getPlayerClan(player.getUniqueId());
         if (clan == null) return;
@@ -39,5 +42,10 @@ public class PlayerJoinQuitListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(@NotNull PlayerQuitEvent event) {
         plugin.getChatManager().resetMode(event.getPlayer().getUniqueId());
+
+        if (plugin.getRedisManager().isActive())
+            plugin.getServer().getAsyncScheduler().runNow(plugin, t ->
+                    plugin.getRedisManager().publishPlayerOffline(
+                            event.getPlayer().getUniqueId().toString()));
     }
 }

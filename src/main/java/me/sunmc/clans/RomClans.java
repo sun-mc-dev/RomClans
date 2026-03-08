@@ -1,6 +1,7 @@
 package me.sunmc.clans;
 
 import me.sunmc.clans.cache.ClanCache;
+import me.sunmc.clans.cache.NetworkPlayerTracker;
 import me.sunmc.clans.command.ClanAdminCommand;
 import me.sunmc.clans.command.ClanCommand;
 import me.sunmc.clans.config.ConfigManager;
@@ -33,6 +34,7 @@ public final class RomClans extends JavaPlugin {
     private DatabaseManager databaseManager;
     private RedisManager redisManager;
     private ClanCache clanCache;
+    private NetworkPlayerTracker networkPlayerTracker;
     private ClanManager clanManager;
     private InviteManager inviteManager;
     private RelationManager relationManager;
@@ -78,6 +80,7 @@ public final class RomClans extends JavaPlugin {
         }
 
         clanCache = new ClanCache();
+        networkPlayerTracker = new NetworkPlayerTracker();
         clanManager = new ClanManager(this);
         inviteManager = new InviteManager(this);
         relationManager = new RelationManager(this);
@@ -144,6 +147,10 @@ public final class RomClans extends JavaPlugin {
 
     public ClanCache getClanCache() {
         return clanCache;
+    }
+
+    public NetworkPlayerTracker getNetworkPlayerTracker() {
+        return networkPlayerTracker;
     }
 
     public ClanManager getClanManager() {

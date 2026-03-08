@@ -21,8 +21,9 @@ public class AllySubCommand implements SubCommand {
 
     @Override
     public void execute(Player player, String @NotNull [] args) {
+
         if (args.length < 2) {
-            plugin.getMessagesManager().send(player, "error");
+            plugin.getMessagesManager().send(player, "ally-usage");
             return;
         }
 
@@ -47,7 +48,7 @@ public class AllySubCommand implements SubCommand {
             case "accept" -> handleAccept(player, clan, target);
             case "deny" -> handleDeny(player, clan, target);
             case "remove" -> handleRemove(player, clan, target);
-            default -> plugin.getMessagesManager().send(player, "error");
+            default -> plugin.getMessagesManager().send(player, "ally-usage");
         }
     }
 

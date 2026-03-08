@@ -73,6 +73,8 @@ public class ClanManager {
         ClanMember member = new ClanMember(playerUuid, playerName, ClanRank.MEMBER, System.currentTimeMillis());
         clan.addMember(member);
         plugin.getClanCache().addPlayerToIndex(playerUuid, clan.getId());
+        // Clear any pending invite so the officer can re-invite if the player leaves again
+        plugin.getInviteManager().clearInvitesFromClan(playerUuid, clan.getName());
         return plugin.getDatabase().insertMember(clan.getId(), member).thenRun(() -> {
             if (plugin.getRedisManager().isActive())
                 plugin.getRedisManager().publishMemberAdd(clan.getId().toString(),

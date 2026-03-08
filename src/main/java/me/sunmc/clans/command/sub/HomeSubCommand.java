@@ -75,6 +75,7 @@ public class HomeSubCommand implements SubCommand {
 
     /**
      * Resolves the home location and initiates the async teleport. Must be on entity thread.
+     * properly handles teleportAsync returning false.
      */
     private void doTeleport(Player player, @NotNull Clan clan) {
         Location dest = clan.buildHomeLocation(plugin.getServer());
@@ -82,14 +83,19 @@ public class HomeSubCommand implements SubCommand {
             String homeServer = clan.getHomeServerId();
             String thisServer = plugin.getConfigManager().getServerId();
             if (homeServer != null && !homeServer.equals(thisServer)) {
-                plugin.getMessagesManager().send(player, "home-wrong-server", Map.of("server", homeServer));
+                plugin.getMessagesManager().send(player, "home-wrong-server",
+                        Map.of("server", homeServer));
             } else {
                 plugin.getMessagesManager().send(player, "home-world-missing");
             }
             return;
         }
         player.teleportAsync(dest).thenAccept(success -> {
-            if (success) plugin.getMessagesManager().send(player, "home-teleported");
+            if (success) {
+                plugin.getMessagesManager().send(player, "home-teleported");
+            } else {
+                plugin.getMessagesManager().send(player, "home-teleport-failed");
+            }
         });
     }
 

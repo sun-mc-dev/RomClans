@@ -20,8 +20,9 @@ public class EnemySubCommand implements SubCommand {
 
     @Override
     public void execute(Player player, String @NotNull [] args) {
+
         if (args.length < 2) {
-            plugin.getMessagesManager().send(player, "error");
+            plugin.getMessagesManager().send(player, "enemy-usage");
             return;
         }
 
@@ -58,7 +59,6 @@ public class EnemySubCommand implements SubCommand {
                 plugin.getRelationManager().addEnemy(clan, target).thenRun(() -> {
                     plugin.getMessagesManager().send(player, "enemy-add-success",
                             Map.of("clan", target.getName()));
-                    // Notify all online members of the target clan
                     notifyAll(target, "enemy-add-notify", Map.of("clan", clan.getName()));
                 });
             }
@@ -72,7 +72,7 @@ public class EnemySubCommand implements SubCommand {
                         plugin.getMessagesManager().send(player, "enemy-remove-success",
                                 Map.of("clan", target.getName())));
             }
-            default -> plugin.getMessagesManager().send(player, "error");
+            default -> plugin.getMessagesManager().send(player, "enemy-usage");
         }
     }
 

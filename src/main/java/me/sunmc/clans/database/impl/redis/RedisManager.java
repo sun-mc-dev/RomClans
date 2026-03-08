@@ -173,6 +173,26 @@ public class RedisManager {
         o.addProperty("clanId", clanId);
         publish(CHAN_SYNC, o);
     }
+    
+    public void publishAllyRequest(String requesterClanId, String requesterClanName, String targetClanId) {
+        JsonObject o = base("ALLY_REQUEST");
+        o.addProperty("requesterClanId", requesterClanId);
+        o.addProperty("requesterClanName", requesterClanName);
+        o.addProperty("targetClanId", targetClanId);
+        publish(CHAN_SYNC, o);
+    }
+
+    public void publishPlayerOnline(String uuid) {
+        JsonObject o = base("PLAYER_ONLINE");
+        o.addProperty("uuid", uuid);
+        publish(CHAN_SYNC, o);
+    }
+
+    public void publishPlayerOffline(String uuid) {
+        JsonObject o = base("PLAYER_OFFLINE");
+        o.addProperty("uuid", uuid);
+        publish(CHAN_SYNC, o);
+    }
 
     private @NotNull JsonObject base(String type) {
         JsonObject o = new JsonObject();

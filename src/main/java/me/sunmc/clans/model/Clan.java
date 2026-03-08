@@ -140,9 +140,23 @@ public class Clan {
         this.homeSet = true;
     }
 
+    /**
+     * Uses case-insensitive world name lookup as a fallback so that
+     * world names that differ only in capitalisation still resolve correctly.
+     */
     public Location buildHomeLocation(Server srv) {
         if (!homeSet || homeWorld == null) return null;
+        // Primary lookup (exact match)
         World w = srv.getWorld(homeWorld);
+        // Fallback: case-insensitive scan
+        if (w == null) {
+            for (World candidate : srv.getWorlds()) {
+                if (candidate.getName().equalsIgnoreCase(homeWorld)) {
+                    w = candidate;
+                    break;
+                }
+            }
+        }
         return w == null ? null : new Location(w, homeX, homeY, homeZ, homeYaw, homePitch);
     }
 

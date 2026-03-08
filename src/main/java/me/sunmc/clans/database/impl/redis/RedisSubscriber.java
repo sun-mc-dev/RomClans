@@ -7,8 +7,10 @@ import me.sunmc.clans.RomClans;
 import me.sunmc.clans.model.Clan;
 import me.sunmc.clans.model.ClanMember;
 import me.sunmc.clans.model.ClanRank;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -50,20 +52,41 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                     j.get("clanA").getAsString(), j.get("clanB").getAsString(),
                     j.get("relType").getAsString(), j.get("action").getAsString());
 
+            case "ALLY_REQUEST" -> {
+                UUID targetClanId = UUID.fromString(j.get("targetClanId").getAsString());
+                Clan target = plugin.getClanCache().getById(targetClanId);
+                if (target == null) return;
+                // Update in-memory pending state so /clan ally accept works cross-server
+                UUID requesterClanId = UUID.fromString(j.get("requesterClanId").getAsString());
+                target.addPendingAllyReq(requesterClanId);
+                // Notify local officers
+                String requesterName = j.get("requesterClanName").getAsString();
+                String cmd = plugin.getConfigManager().getCommandAlias();
+                for (ClanMember m : target.getMembers().values()) {
+                    if (m.getRank().getLevel() < ClanRank.OFFICER.getLevel()) continue;
+                    Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
+                    if (p != null) plugin.getMessagesManager().send(p, "ally-request-received",
+                            Map.of("clan", requesterName, "cmd", cmd));
+                }
+            }
+
             case "FF_TOGGLE" -> {
                 Clan c = byClanId(j);
                 if (c != null) c.setFriendlyFire(j.get("ff").getAsBoolean());
             }
+
             case "RETAG" -> {
                 Clan c = byClanId(j);
                 if (c != null) c.setTag(j.get("tag").getAsString());
             }
+
             case "RANK_UPDATE" -> {
                 Clan c = byClanId(j);
                 if (c == null) return;
                 ClanMember m = c.getMember(UUID.fromString(j.get("playerUuid").getAsString()));
                 if (m != null) m.setRank(ClanRank.valueOf(j.get("rank").getAsString()));
             }
+
             case "MEMBER_ADD" -> {
                 Clan c = byClanId(j);
                 if (c == null) return;
@@ -73,7 +96,10 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                             ClanRank.valueOf(j.get("rank").getAsString()), System.currentTimeMillis()));
                     plugin.getClanCache().addPlayerToIndex(pu, c.getId());
                 }
+
+                plugin.getInviteManager().clearInvitesFromClan(pu, c.getName());
             }
+
             case "MEMBER_REMOVE" -> {
                 Clan c = byClanId(j);
                 if (c == null) return;
@@ -82,12 +108,14 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                 plugin.getClanCache().removePlayerFromIndex(pu);
                 plugin.getChatManager().resetMode(pu);
             }
+
             case "DISBAND" -> {
                 UUID cid = UUID.fromString(j.get("clanId").getAsString());
                 Clan c = plugin.getClanCache().getById(cid);
                 if (c != null) c.getMembers().keySet().forEach(plugin.getChatManager()::resetMode);
                 plugin.getClanCache().remove(cid);
             }
+
             case "TRANSFER" -> {
                 Clan c = byClanId(j);
                 if (c == null) return;
@@ -99,6 +127,7 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                 ClanMember om = c.getMember(oldL);
                 if (om != null) om.setRank(ClanRank.CO_LEADER);
             }
+
             case "HOME_SET" -> {
                 Clan c = byClanId(j);
                 if (c == null) return;
@@ -111,6 +140,12 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                 c.setHomeSet(true);
             }
             case "CACHE_INVALIDATE" -> plugin.getClanManager().loadAll();
+
+            case "PLAYER_ONLINE" -> plugin.getNetworkPlayerTracker()
+                    .setOnline(UUID.fromString(j.get("uuid").getAsString()));
+
+            case "PLAYER_OFFLINE" -> plugin.getNetworkPlayerTracker()
+                    .setOffline(UUID.fromString(j.get("uuid").getAsString()));
         }
     }
 

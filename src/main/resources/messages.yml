@@ -1,7 +1,7 @@
 # ============================================================
 #  RomClans — Messages
 #  Plugin by SunMC
-#  Version of 0.1-alpha.1
+#  Version of 0.1-alpha.2
 # ============================================================
 #
 #  Formatting: All messages support MiniMessage syntax.
@@ -9,11 +9,13 @@
 #
 #  Common tags:
 #    <red>, <green>, <gold>, <yellow>, <aqua>, <white>, <gray>
-#    <bold>, <italic>, <underlined>, <strikethrough>
-#    <gradient:color1:color2>text</gradient>
+#    <bold>, <gradient:color1:color2>text</gradient>
 #    <rainbow>text</rainbow>
 #    <click:run_command:/clan info>text</click>
 #    <hover:show_text:'tooltip'>text</hover>
+#
+#  NOTE: <italic>, <underlined>, <strikethrough> and <obfuscated>
+#        are intentionally blocked in clan tags.
 #
 #  Placeholders: each message lists its available <placeholders>.
 #  {prefix} is replaced with the prefix value defined below.
@@ -67,6 +69,10 @@ create-usage: "{prefix} <red>Usage: /clan create <name> <tag>"
 
 # Shown when the name or plain-text tag matches a reserved word.
 create-name-reserved: "{prefix} <red>That name or tag is reserved and cannot be used."
+
+# Shown when a tag contains a forbidden decoration (italic, underlined,
+# strikethrough, obfuscated/magic) or contains spaces.
+create-tag-forbidden: "{prefix} <red>Tags may not contain spaces, italic, underlined, strikethrough or obfuscated text."
 
 # ── Disband (/clan disband) ───────────────────────────────────
 # Shown when a non-leader tries to disband.
@@ -217,6 +223,9 @@ transfer-notify: "{prefix} <gold>You are now the leader of the clan!"
 transfer-not-leader: "{prefix} <red>Only the leader can transfer leadership."
 
 # ── Ally (/clan ally <add|accept|deny|remove> <clan>) ─────────
+# Shown when /clan ally is run with missing arguments.
+ally-usage: "{prefix} <red>Usage: /clan ally <add|accept|deny|remove> <clan>"
+
 # Shown to the sender after an ally request is sent.
 # Placeholders: <clan>
 ally-request-sent: "{prefix} <green>Alliance request sent to <gold><clan></gold>."
@@ -231,7 +240,7 @@ ally-accept-success: "{prefix} <green>You are now allied with <gold><clan></gold
 
 # Shown to the requester's officers+ when their request is accepted.
 # Placeholders: <clan>
-ally-accept-notify: "{prefix} <green><clan></clan> has accepted your alliance request!"
+ally-accept-notify: "{prefix} <green><clan> has accepted your alliance request!"
 
 # Shown to the denier after denying a request.
 # Placeholders: <clan>
@@ -239,7 +248,7 @@ ally-deny-success: "{prefix} <yellow>You denied the alliance request from <gold>
 
 # Shown to the requester's officers+ when their request is denied.
 # Placeholders: <clan>
-ally-deny-notify: "{prefix} <yellow><clan></clan> denied your alliance request."
+ally-deny-notify: "{prefix} <yellow><clan> denied your alliance request."
 
 # Shown to the initiator after breaking an alliance.
 # Placeholders: <clan>
@@ -247,7 +256,7 @@ ally-remove-success: "{prefix} <yellow>Alliance with <gold><clan></gold> has bee
 
 # Shown to the other clan's officers+ when the alliance is broken.
 # Placeholders: <clan>
-ally-remove-notify: "{prefix} <yellow><clan></clan> broke the alliance with you."
+ally-remove-notify: "{prefix} <yellow><clan> broke the alliance with you."
 
 # Shown when the two clans are already allied.
 ally-already: "{prefix} <red>You are already allied with that clan."
@@ -270,13 +279,16 @@ ally-not-leader: "{prefix} <red>Only the leader can manage alliances."
 ally-not-allied: "{prefix} <red>You are not allied with that clan."
 
 # ── Enemy (/clan enemy <add|remove> <clan>) ───────────────────
+# Shown when /clan enemy is run with missing arguments.
+enemy-usage: "{prefix} <red>Usage: /clan enemy <add|remove> <clan>"
+
 # Shown to the declarer after marking a clan as enemy.
 # Placeholders: <clan>
 enemy-add-success: "{prefix} <red>You have declared <gold><clan></gold> an enemy."
 
 # Broadcast to all online members of the target clan.
 # Placeholders: <clan>
-enemy-add-notify: "{prefix} <red><clan></clan> has declared your clan an enemy!"
+enemy-add-notify: "{prefix} <red><clan> has declared your clan an enemy!"
 
 # Shown to the declarer after removing an enemy.
 # Placeholders: <clan>
@@ -383,6 +395,9 @@ home-moved: "{prefix} <red>Teleport cancelled — you moved!"
 
 # Shown when the home world no longer exists on this server.
 home-world-missing: "{prefix} <red>The clan home world no longer exists."
+
+# Shown when teleportAsync returns false (destination chunk unloaded, etc.).
+home-teleport-failed: "{prefix} <red>Teleportation failed — the destination may be unloaded. Try again."
 
 # Shown when the clan home is set on a different server in the network.
 # Placeholders: <server> (the server-id where the home is set)

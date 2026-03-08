@@ -112,7 +112,7 @@ public final class ClanInfoGUI {
                 .forEach(m -> {
                     for (int s = 9; s < 45; s++) {
                         if (inv.getItem(s) == null) {
-                            inv.setItem(s, head(m));
+                            inv.setItem(s, head(m, plugin));
                             break;
                         }
                     }
@@ -123,12 +123,16 @@ public final class ClanInfoGUI {
         viewer.openInventory(inv);
     }
 
-    private static @NotNull ItemStack head(@NotNull ClanMember m) {
+    private static @NotNull ItemStack head(@NotNull ClanMember m, RomClans plugin) {
 
         ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) skull.getItemMeta();
         meta.setOwningPlayer(Bukkit.getOfflinePlayer(m.getPlayerUuid()));
-        boolean online = Bukkit.getPlayer(m.getPlayerUuid()) != null;
+
+        boolean online = Bukkit.getPlayer(m.getPlayerUuid()) != null
+                || (plugin.getRedisManager().isActive()
+                && plugin.getNetworkPlayerTracker().isOnline(m.getPlayerUuid()));
+
         meta.displayName(Component.text(m.getPlayerName(),
                         online ? NamedTextColor.GREEN : NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));

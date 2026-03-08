@@ -5,7 +5,10 @@ import me.sunmc.clans.model.Clan;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -95,6 +98,17 @@ public class InviteManager {
     public int denyAll(UUID inviteeUuid) {
         ConcurrentHashMap<String, PendingInvite> map = pending.remove(inviteeUuid);
         return map == null ? 0 : map.size();
+    }
+
+    /**
+     * Remove any pending invite that clan {@code clanName} sent to {@code inviteeUuid}.
+     * Called when a player joins or is added to a clan so stale invites are cleared.
+     */
+    public void clearInvitesFromClan(UUID inviteeUuid, String clanName) {
+        ConcurrentHashMap<String, PendingInvite> map = pending.get(inviteeUuid);
+        if (map == null) return;
+        map.remove(clanName.toLowerCase());
+        if (map.isEmpty()) pending.remove(inviteeUuid);
     }
 
     public void receiveRedisInvite(String clanId, String clanName, String inviterUuid,
