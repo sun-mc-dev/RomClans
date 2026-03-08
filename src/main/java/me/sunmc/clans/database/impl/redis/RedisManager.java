@@ -173,11 +173,32 @@ public class RedisManager {
         o.addProperty("clanId", clanId);
         publish(CHAN_SYNC, o);
     }
-    
+
     public void publishAllyRequest(String requesterClanId, String requesterClanName, String targetClanId) {
         JsonObject o = base("ALLY_REQUEST");
         o.addProperty("requesterClanId", requesterClanId);
         o.addProperty("requesterClanName", requesterClanName);
+        o.addProperty("targetClanId", targetClanId);
+        publish(CHAN_SYNC, o);
+    }
+
+    public void publishAllyAccept(String requesterClanId, String acceptorClanName) {
+        JsonObject o = base("ALLY_ACCEPTED");
+        o.addProperty("requesterClanId", requesterClanId);
+        o.addProperty("acceptorClanName", acceptorClanName);
+        publish(CHAN_SYNC, o);
+    }
+
+    public void publishAllyDeny(String requesterClanId, String denierClanName) {
+        JsonObject o = base("ALLY_DENIED");
+        o.addProperty("requesterClanId", requesterClanId);
+        o.addProperty("denierClanName", denierClanName);
+        publish(CHAN_SYNC, o);
+    }
+
+    public void publishAllyRemove(String initiatorClanName, String targetClanId) {
+        JsonObject o = base("ALLY_REMOVED");
+        o.addProperty("initiatorClanName", initiatorClanName);
         o.addProperty("targetClanId", targetClanId);
         publish(CHAN_SYNC, o);
     }

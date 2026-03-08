@@ -35,12 +35,20 @@ public class RetagSubCommand implements SubCommand {
         String newTag = String.join(" ", args);
         var cfg = plugin.getConfigManager();
 
-        if (!MiniMessageUtil.isValidTag(newTag, cfg.getMinTagLength(), cfg.getMaxTagLength())) {
-            plugin.getMessagesManager().send(player, "create-invalid-tag", Map.of(
-                    "min", String.valueOf(cfg.getMinTagLength()),
-                    "max", String.valueOf(cfg.getMaxTagLength())
-            ));
-            return;
+        var tagResult = MiniMessageUtil.validateTag(newTag, cfg.getMinTagLength(), cfg.getMaxTagLength());
+        switch (tagResult) {
+            case FORBIDDEN_DECORATION, FORBIDDEN_SPACE -> {
+                plugin.getMessagesManager().send(player, "create-tag-forbidden");
+                return;
+            }
+            case INVALID_LENGTH -> {
+                plugin.getMessagesManager().send(player, "create-invalid-tag", Map.of(
+                        "min", String.valueOf(cfg.getMinTagLength()),
+                        "max", String.valueOf(cfg.getMaxTagLength())));
+                return;
+            }
+            case OK -> {
+            }
         }
 
         plugin.getClanManager().retag(clan, newTag).thenRun(() ->

@@ -49,12 +49,9 @@ public class RelationManager {
      * Precondition: acceptor.hasPendingAllyReq(requester.getId()) == true.
      */
     public CompletableFuture<Void> acceptAlliance(@NotNull Clan requester, @NotNull Clan acceptor) {
-        // Update in-memory
         acceptor.removePendingAllyReq(requester.getId());
         requester.addAlly(acceptor.getId());
         acceptor.addAlly(requester.getId());
-
-        // DB: delete the ALLY_REQUEST row, insert two ALLY rows (bidirectional)
         return plugin.getDatabase().deleteRelation(requester.getId(), acceptor.getId())
                 .thenCompose(v -> plugin.getDatabase().insertRelation(
                         requester.getId(), acceptor.getId(), RelationType.ALLY))
@@ -62,10 +59,14 @@ public class RelationManager {
                         acceptor.getId(), requester.getId(), RelationType.ALLY))
                 .thenRun(() -> {
                     if (plugin.getRedisManager().isActive()) {
+                        // Cache sync on all servers
                         plugin.getRedisManager().publishRelationUpdate(
                                 requester.getId().toString(), acceptor.getId().toString(), "ALLY", "ADD");
                         plugin.getRedisManager().publishRelationUpdate(
                                 acceptor.getId().toString(), requester.getId().toString(), "ALLY", "ADD");
+                        // Player notification — tell requester clan's servers the request was accepted
+                        plugin.getRedisManager().publishAllyAccept(
+                                requester.getId().toString(), acceptor.getName());
                     }
                 });
     }
@@ -75,7 +76,14 @@ public class RelationManager {
      */
     public CompletableFuture<Void> denyAlliance(@NotNull Clan requester, @NotNull Clan denier) {
         denier.removePendingAllyReq(requester.getId());
-        return plugin.getDatabase().deleteRelation(requester.getId(), denier.getId());
+        return plugin.getDatabase().deleteRelation(requester.getId(), denier.getId())
+                .thenRun(() -> {
+                    if (plugin.getRedisManager().isActive()) {
+                        // Player notification — tell requester clan's servers the request was denied
+                        plugin.getRedisManager().publishAllyDeny(
+                                requester.getId().toString(), denier.getName());
+                    }
+                });
     }
 
     /**
@@ -88,10 +96,13 @@ public class RelationManager {
                 .thenCompose(v -> plugin.getDatabase().deleteRelation(b.getId(), a.getId()))
                 .thenRun(() -> {
                     if (plugin.getRedisManager().isActive()) {
+                        // Cache sync on all servers
                         plugin.getRedisManager().publishRelationUpdate(
                                 a.getId().toString(), b.getId().toString(), "ALLY", "REMOVE");
                         plugin.getRedisManager().publishRelationUpdate(
                                 b.getId().toString(), a.getId().toString(), "ALLY", "REMOVE");
+                        // Player notification — tell b's servers that a broke the alliance
+                        plugin.getRedisManager().publishAllyRemove(a.getName(), b.getId().toString());
                     }
                 });
     }

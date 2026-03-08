@@ -55,18 +55,28 @@ public class CreateSubCommand implements SubCommand {
             plugin.getMessagesManager().send(player, "create-name-reserved");
             return;
         }
-        if (!MiniMessageUtil.isValidTag(tag, cfg.getMinTagLength(), cfg.getMaxTagLength())) {
-            plugin.getMessagesManager().send(player, "create-invalid-tag",
-                    Map.of("min", String.valueOf(cfg.getMinTagLength()),
-                            "max", String.valueOf(cfg.getMaxTagLength())));
-            return;
+
+        var tagResult = MiniMessageUtil.validateTag(tag, cfg.getMinTagLength(), cfg.getMaxTagLength());
+        switch (tagResult) {
+            case FORBIDDEN_DECORATION, FORBIDDEN_SPACE -> {
+                plugin.getMessagesManager().send(player, "create-tag-forbidden");
+                return;
+            }
+            case INVALID_LENGTH -> {
+                plugin.getMessagesManager().send(player, "create-invalid-tag",
+                        Map.of("min", String.valueOf(cfg.getMinTagLength()),
+                                "max", String.valueOf(cfg.getMaxTagLength())));
+                return;
+            }
+            case OK -> {
+            }
         }
-        // Guard against reserved words in the tag's plain-text
         String plainTag = MiniMessageUtil.strip(tag);
         if (RESERVED.contains(plainTag.toLowerCase())) {
             plugin.getMessagesManager().send(player, "create-name-reserved");
             return;
         }
+
         if (plugin.getClanCache().existsByName(name)) {
             plugin.getMessagesManager().send(player, "create-name-taken");
             return;

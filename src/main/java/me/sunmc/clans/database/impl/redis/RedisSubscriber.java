@@ -70,6 +70,48 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                 }
             }
 
+            case "ALLY_ACCEPTED" -> {
+                // Notify requester clan officers on THIS server that acceptor accepted
+                UUID reqId = UUID.fromString(j.get("requesterClanId").getAsString());
+                Clan requester = plugin.getClanCache().getById(reqId);
+                if (requester == null) return;
+                String acceptorName = j.get("acceptorClanName").getAsString();
+                for (ClanMember m : requester.getMembers().values()) {
+                    if (m.getRank().getLevel() < ClanRank.OFFICER.getLevel()) continue;
+                    Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
+                    if (p != null) plugin.getMessagesManager().send(p, "ally-accept-notify",
+                            Map.of("clan", acceptorName));
+                }
+            }
+
+            case "ALLY_DENIED" -> {
+                // Notify requester clan officers on THIS server that denier denied
+                UUID reqId = UUID.fromString(j.get("requesterClanId").getAsString());
+                Clan requester = plugin.getClanCache().getById(reqId);
+                if (requester == null) return;
+                String denierName = j.get("denierClanName").getAsString();
+                for (ClanMember m : requester.getMembers().values()) {
+                    if (m.getRank().getLevel() < ClanRank.OFFICER.getLevel()) continue;
+                    Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
+                    if (p != null) plugin.getMessagesManager().send(p, "ally-deny-notify",
+                            Map.of("clan", denierName));
+                }
+            }
+
+            case "ALLY_REMOVED" -> {
+                // Notify target clan officers on THIS server that initiator broke the alliance
+                UUID targetId = UUID.fromString(j.get("targetClanId").getAsString());
+                Clan target = plugin.getClanCache().getById(targetId);
+                if (target == null) return;
+                String initiatorName = j.get("initiatorClanName").getAsString();
+                for (ClanMember m : target.getMembers().values()) {
+                    if (m.getRank().getLevel() < ClanRank.OFFICER.getLevel()) continue;
+                    Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
+                    if (p != null) plugin.getMessagesManager().send(p, "ally-remove-notify",
+                            Map.of("clan", initiatorName));
+                }
+            }
+
             case "FF_TOGGLE" -> {
                 Clan c = byClanId(j);
                 if (c != null) c.setFriendlyFire(j.get("ff").getAsBoolean());

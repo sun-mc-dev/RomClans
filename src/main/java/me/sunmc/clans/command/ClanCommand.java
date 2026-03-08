@@ -90,6 +90,12 @@ public class ClanCommand extends Command {
         // When world/entity state is needed, subcommands dispatch to entity scheduler.
         plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
             try {
+                // Re-check inside the async block: the membership check on the command thread
+                // and this execution have a race window where the player may have left/been kicked.
+                if (sub.requiresClan() && plugin.getClanManager().getPlayerClan(player.getUniqueId()) == null) {
+                    plugin.getMessagesManager().send(player, "not-in-clan");
+                    return;
+                }
                 sub.execute(player, subArgs);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Error in sub-command " + subName, e);
