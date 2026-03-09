@@ -1,7 +1,7 @@
 # ============================================================
 #  RomClans — Messages
 #  Plugin by SunMC
-#  Version of 0.1-alpha.2
+#  Version of 0.2-alpha
 # ============================================================
 #
 #  Formatting: All messages support MiniMessage syntax.
@@ -399,6 +399,11 @@ home-world-missing: "{prefix} <red>The clan home world no longer exists."
 # Shown when teleportAsync returns false (destination chunk unloaded, etc.).
 home-teleport-failed: "{prefix} <red>Teleportation failed — the destination may be unloaded. Try again."
 
-# Shown when the clan home is set on a different server in the network.
-# Placeholders: <server> (the server-id where the home is set)
+# Shown when the clan home is on a different server but Redis is
+# disabled — the plugin cannot switch servers automatically.
+# Placeholders: <server>
 home-wrong-server: "{prefix} <red>Your clan home is set on server <yellow><server></yellow>. Connect there to use it."
+
+# Shown when /clan home sends the player to another server (Redis enabled).
+# Placeholders: <server>
+home-sending: "{prefix} <yellow>Your clan home is on server <white><server></white>. Sending you there now..."

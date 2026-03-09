@@ -32,23 +32,18 @@ public class MessagesManager {
         rawPrefix = msgs.getString("prefix", "<gray>[<gold>Clans</gold>]</gray>");
     }
 
-    /**
-     * Send a message by key (no extra placeholders).
-     */
     public void send(@NotNull CommandSender sender, String key) {
         sender.sendMessage(parse(key, Map.of()));
     }
 
-    /**
-     * Send a message by key with named placeholders.
-     */
     public void send(@NotNull CommandSender sender, String key, Map<String, String> ph) {
         sender.sendMessage(parse(key, ph));
     }
 
-    /**
-     * Parse a message key into an Adventure Component.
-     */
+    public Component parse(String key) {
+        return parse(key, Map.of());
+    }
+
     public Component parse(String key, @NotNull Map<String, String> ph) {
         String raw = msgs.getString(key, "<red>Missing message: " + key);
         raw = raw.replace("{prefix}", rawPrefix);
@@ -57,20 +52,27 @@ public class MessagesManager {
         return mm.deserialize(raw, b.build());
     }
 
-    public Component parse(String key) {
-        return parse(key, Map.of());
+    public void send(@NotNull CommandSender sender, String key,
+                     Map<String, String> strPh, Map<String, Component> compPh) {
+        sender.sendMessage(parse(key, strPh, compPh));
     }
 
-    /**
-     * Deserialize arbitrary MiniMessage string (e.g. clan tag).
-     */
+    public Component parse(String key,
+                           @NotNull Map<String, String> strPh,
+                           @NotNull Map<String, Component> compPh) {
+
+        String raw = msgs.getString(key, "<red>Missing message: " + key);
+        raw = raw.replace("{prefix}", rawPrefix);
+        TagResolver.Builder b = TagResolver.builder();
+        strPh.forEach((k, v) -> b.resolver(Placeholder.parsed(k, v)));
+        compPh.forEach((k, v) -> b.resolver(Placeholder.component(k, v)));
+        return mm.deserialize(raw, b.build());
+    }
+
     public Component deserialize(String miniMsg) {
         return mm.deserialize(miniMsg);
     }
 
-    /**
-     * Strip MiniMessage tags — returns plain text.
-     */
     public String stripTags(String miniMsg) {
         return mm.stripTags(miniMsg);
     }

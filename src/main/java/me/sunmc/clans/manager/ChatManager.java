@@ -41,42 +41,25 @@ public class ChatManager {
         chatModes.remove(playerUuid);
     }
 
-    /**
-     * Send a clan chat message to all online clan members, and relay via Redis.
-     */
     public void sendClanChat(@NotNull Player sender, @NotNull Clan clan, Component rawMessage) {
         String plainMsg = PlainTextComponentSerializer.plainText().serialize(rawMessage);
         Component formatted = buildClanFormat("chat-format-clan", clan.getTag(), sender.getName(), plainMsg);
-
-        // Deliver locally
         for (ClanMember m : clan.getMembers().values()) {
             Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
             if (p != null) p.sendMessage(formatted);
         }
-
-        // Relay cross-server
-        if (plugin.getRedisManager().isActive()) {
-            plugin.getRedisManager().publishChat(
-                    "CLAN_CHAT", clan.getId().toString(),
-                    sender.getName(), clan.getTag(), plainMsg
-            );
-        }
+        if (plugin.getRedisManager().isActive())
+            plugin.getRedisManager().publishChat("CLAN_CHAT", clan.getId().toString(),
+                    sender.getName(), clan.getTag(), plainMsg);
     }
 
-    /**
-     * Send an allay chat message to all online members of allied clans, and relay via Redis.
-     */
     public void sendAllyChat(@NotNull Player sender, @NotNull Clan clan, Component rawMessage) {
         String plainMsg = PlainTextComponentSerializer.plainText().serialize(rawMessage);
         Component formatted = buildClanFormat("chat-format-ally", clan.getTag(), sender.getName(), plainMsg);
-
-        // Send to own clan
         for (ClanMember m : clan.getMembers().values()) {
             Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
             if (p != null) p.sendMessage(formatted);
         }
-
-        // Send to allied clans
         for (UUID allyId : clan.getAllyIds()) {
             Clan ally = plugin.getClanCache().getById(allyId);
             if (ally == null) continue;
@@ -85,41 +68,23 @@ public class ChatManager {
                 if (p != null) p.sendMessage(formatted);
             }
         }
-
-        if (plugin.getRedisManager().isActive()) {
-            plugin.getRedisManager().publishChat(
-                    "ALLY_CHAT", clan.getId().toString(),
-                    sender.getName(), clan.getTag(), plainMsg
-            );
-        }
+        if (plugin.getRedisManager().isActive())
+            plugin.getRedisManager().publishChat("ALLY_CHAT", clan.getId().toString(),
+                    sender.getName(), clan.getTag(), plainMsg);
     }
 
-    /**
-     * Called by RedisSubscriber when a chat packet arrives from another server.
-     */
     public void receiveRedisChat(@NotNull String type, String clanId, String senderName,
                                  String clanTag, String message) {
         String key = type.equals("CLAN_CHAT") ? "chat-format-clan" : "chat-format-ally";
         Component formatted = buildClanFormat(key, clanTag, senderName, message);
         UUID clanUuid = UUID.fromString(clanId);
-
-        if (type.equals("CLAN_CHAT")) {
-            Clan clan = plugin.getClanCache().getById(clanUuid);
-            if (clan == null) return;
-            clan.getMembers().values().forEach(m -> {
-                Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
-                if (p != null) p.sendMessage(formatted);
-            });
-        } else {
-            // Ally chat: deliver to all allied clans on this server
-            Clan clan = plugin.getClanCache().getById(clanUuid);
-            if (clan == null) return;
-            // own members
-            clan.getMembers().values().forEach(m -> {
-                Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
-                if (p != null) p.sendMessage(formatted);
-            });
-            // allied clan members
+        Clan clan = plugin.getClanCache().getById(clanUuid);
+        if (clan == null) return;
+        clan.getMembers().values().forEach(m -> {
+            Player p = plugin.getServer().getPlayer(m.getPlayerUuid());
+            if (p != null) p.sendMessage(formatted);
+        });
+        if (!type.equals("CLAN_CHAT")) {
             clan.getAllyIds().forEach(allyId -> {
                 Clan ally = plugin.getClanCache().getById(allyId);
                 if (ally == null) return;
@@ -131,12 +96,15 @@ public class ChatManager {
         }
     }
 
+    /**
+     * Builds a chat line. The tag is deserialized to a Component first so its
+     * styles are fully isolated — an unclosed tag such as {@code <green>CLN}
+     * will not bleed colour into the player name or message text
+     */
     private Component buildClanFormat(String key, String tag, String player, String message) {
-        return plugin.getMessagesManager().parse(key, Map.of(
-                "tag", tag,
-                "player", player,
-                "message", message
-        ));
+        return plugin.getMessagesManager().parse(key,
+                Map.of("player", player, "message", message),
+                Map.of("tag", plugin.getMessagesManager().deserialize(tag)));
     }
 
     public void shutdown() {

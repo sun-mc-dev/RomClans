@@ -9,6 +9,7 @@ import me.sunmc.clans.RomClans;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
+import java.util.UUID;
 import java.util.logging.Level;
 
 public class RedisManager {
@@ -16,6 +17,10 @@ public class RedisManager {
     public static final String CHAN_CHAT = "romclans:chat";
     public static final String CHAN_INVITE = "romclans:invite";
     public static final String CHAN_SYNC = "romclans:sync";
+    public static final String CHAN_PROXY = "romclans:proxy";
+
+    private static final String TP_KEY_PREFIX = "romclans:pending_tp:";
+    private static final long TP_TTL_SECONDS = 30L;
 
     private final RomClans plugin;
     private RedisClient redisClient;
@@ -72,6 +77,45 @@ public class RedisManager {
 
     public boolean isActive() {
         return active && publishConn != null && publishConn.isOpen();
+    }
+
+    public void storePendingHomeTeleport(UUID playerUuid, UUID clanId) {
+        if (!isActive()) return;
+        try {
+            publishConn.sync().setex(
+                    TP_KEY_PREFIX + playerUuid,
+                    TP_TTL_SECONDS,
+                    clanId.toString());
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Redis: failed to store pending home teleport", e);
+        }
+    }
+
+    public UUID consumePendingHomeTeleport(UUID playerUuid) {
+        if (!isActive()) return null;
+        try {
+            String key = TP_KEY_PREFIX + playerUuid;
+            String val = publishConn.sync().get(key);
+            if (val == null) return null;
+            publishConn.async().del(key);
+            return UUID.fromString(val);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Redis: failed to consume pending home teleport", e);
+            return null;
+        }
+    }
+
+    /**
+     * Tells the Velocity proxy (RClansBridge) to transfer a player to a server.
+     * This is guaranteed to happen AFTER storePendingHomeTeleport() because callers
+     * must invoke this from within the same async block.
+     */
+    public void publishSendToServer(String playerUuid, String targetServer) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type",   "SEND_TO_SERVER");
+        o.addProperty("uuid",   playerUuid);
+        o.addProperty("server", targetServer);
+        publish(CHAN_PROXY, o);
     }
 
     public void publishChat(String type, String clanId, String senderName, String clanTag, String message) {
@@ -155,8 +199,7 @@ public class RedisManager {
         publish(CHAN_SYNC, o);
     }
 
-    public void publishHomeSet(String clanId, String world, double x, double y, double z,
-                               float yaw, float pitch) {
+    public void publishHomeSet(String clanId, String world, double x, double y, double z, float yaw, float pitch) {
         JsonObject o = base("HOME_SET");
         o.addProperty("clanId", clanId);
         o.addProperty("world", world);
@@ -203,25 +246,22 @@ public class RedisManager {
         publish(CHAN_SYNC, o);
     }
 
-    public void publishPlayerOnline(String uuid) {
+    public void publishPlayerOnline(String uuid, String playerName) {
         JsonObject o = base("PLAYER_ONLINE");
         o.addProperty("uuid", uuid);
+        o.addProperty("name", playerName);
         publish(CHAN_SYNC, o);
     }
 
-    public void publishPlayerOffline(String uuid) {
+    public void publishPlayerOffline(String uuid, String playerName) {
         JsonObject o = base("PLAYER_OFFLINE");
         o.addProperty("uuid", uuid);
+        o.addProperty("name", playerName);
         publish(CHAN_SYNC, o);
     }
 
-    /**
-     * Ask all other servers to re-broadcast their online players.
-     * Called once on enable so NetworkPlayerTracker is populated after a restart.
-     */
     public void publishRequestOnlinePlayers() {
-        JsonObject o = base("REQUEST_ONLINE_PLAYERS");
-        publish(CHAN_SYNC, o);
+        publish(CHAN_SYNC, base("REQUEST_ONLINE_PLAYERS"));
     }
 
     private @NotNull JsonObject base(String type) {
@@ -231,9 +271,6 @@ public class RedisManager {
         return o;
     }
 
-    /**
-     * Non-blocking: Lettuce's async publish returns immediately without blocking the caller.
-     */
     private void publish(String channel, JsonObject payload) {
         if (!isActive()) return;
         try {

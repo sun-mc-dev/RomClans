@@ -1,6 +1,7 @@
 package me.sunmc.clans.command;
 
 import me.sunmc.clans.RomClans;
+import me.sunmc.clans.database.AbstractDatabase;
 import me.sunmc.clans.gui.ClanInfoGUI;
 import me.sunmc.clans.gui.ConfirmGUI;
 import me.sunmc.clans.model.Clan;
@@ -17,6 +18,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -51,6 +55,7 @@ public class ClanAdminCommand extends Command {
                 plugin.getMessagesManager().reload();
                 sender.sendMessage(Component.text("[RomClans] Reloaded config & messages.", NamedTextColor.GREEN));
             }
+
             case "disband" -> {
                 if (args.length < 2) {
                     sender.sendMessage(Component.text("Usage: /" + label + " disband <clan>", NamedTextColor.RED));
@@ -71,6 +76,7 @@ public class ClanAdminCommand extends Command {
                     plugin.getFoliaScheduler().entity(player, () -> openDisbandGui(player, clan));
                 });
             }
+
             case "info" -> {
                 if (args.length < 2) {
                     sender.sendMessage(Component.text("Usage: /" + label + " info <clan>", NamedTextColor.RED));
@@ -91,6 +97,53 @@ public class ClanAdminCommand extends Command {
                             ClanInfoGUI.open(player, clan, plugin, plugin.getGuiManager()));
                 });
             }
+
+            // Sets home_server_id in the DB + in-memory cache without moving the
+            // home coordinates. Run this from the console of any server.
+            case "fixhome" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(Component.text(
+                            "Usage: /" + label + " fixhome <clan> <server-id>", NamedTextColor.RED));
+                    return true;
+                }
+                String clanName = args[1];
+                String serverId = args[2];
+                plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
+                    Clan clan = plugin.getClanCache().getByName(clanName);
+                    if (clan == null) {
+                        sender.sendMessage(Component.text("Clan '" + clanName + "' not found.", NamedTextColor.RED));
+                        return;
+                    }
+                    if (!clan.isHomeSet()) {
+                        sender.sendMessage(Component.text("Clan '" + clanName + "' has no home set.", NamedTextColor.RED));
+                        return;
+                    }
+                    // Update in-memory
+                    clan.setHomeServerId(serverId);
+                    Location fakeLoc = new Location(
+                            null, clan.getHomeX(), clan.getHomeY(), clan.getHomeZ(),
+                            clan.getHomeYaw(), clan.getHomePitch());
+
+                    plugin.getDbExecutor().submit(() -> {
+                        try (Connection conn =
+                                     ((AbstractDatabase) plugin.getDatabase())
+                                             .getRawDataSource().getConnection();
+                             PreparedStatement ps = conn.prepareStatement(
+                                     "UPDATE clans SET home_server_id=? WHERE id=?")) {
+                            ps.setString(1, serverId);
+                            ps.setString(2, clan.getId().toString());
+                            ps.executeUpdate();
+                            sender.sendMessage(Component.text(
+                                    "[RomClans] home_server_id for '" + clan.getName()
+                                            + "' set to '" + serverId + "'.", NamedTextColor.GREEN));
+                        } catch (SQLException e) {
+                            plugin.getLogger().warning("fixhome SQL error: " + e.getMessage());
+                            sender.sendMessage(Component.text("SQL error: " + e.getMessage(), NamedTextColor.RED));
+                        }
+                    });
+                });
+            }
+
             default -> sendHelp(sender, label);
         }
         return true;
@@ -111,7 +164,6 @@ public class ClanAdminCommand extends Command {
                 Component.text("⚠ This cannot be undone!", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false)
         ));
         head.setItemMeta(sm);
-
         ConfirmGUI.open(player,
                 Component.text("Admin Disband: " + clan.getName(), NamedTextColor.DARK_RED),
                 head,
@@ -126,7 +178,8 @@ public class ClanAdminCommand extends Command {
                 .append(Component.text("[RomClans Admin]\n", NamedTextColor.GOLD))
                 .append(Component.text("/" + label + " reload\n", NamedTextColor.YELLOW))
                 .append(Component.text("/" + label + " disband <clan>\n", NamedTextColor.YELLOW))
-                .append(Component.text("/" + label + " info <clan>", NamedTextColor.YELLOW))
+                .append(Component.text("/" + label + " info <clan>\n", NamedTextColor.YELLOW))
+                .append(Component.text("/" + label + " fixhome <clan> <server-id>", NamedTextColor.YELLOW))
                 .build());
     }
 
@@ -134,13 +187,15 @@ public class ClanAdminCommand extends Command {
     public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias,
                                              String @NotNull [] args, Location loc) {
         if (!sender.hasPermission(PERM)) return List.of();
-        if (args.length == 1) return Stream.of("reload", "disband", "info")
+        if (args.length == 1) return Stream.of("reload", "disband", "info", "fixhome")
                 .filter(s -> s.startsWith(args[0].toLowerCase())).toList();
         if (args.length == 2 && !args[0].equalsIgnoreCase("reload"))
             return plugin.getClanCache().getAll().stream()
                     .map(Clan::getName)
                     .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
                     .toList();
+        if (args.length == 3 && args[0].equalsIgnoreCase("fixhome"))
+            return List.of(plugin.getConfigManager().getServerId());
         return List.of();
     }
 }

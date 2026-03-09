@@ -393,4 +393,12 @@ public abstract class AbstractDatabase implements Database {
     protected interface ThrowingRunnable {
         void run() throws Exception;
     }
+
+    /**
+     * Exposes the underlying HikariDataSource for admin operations that need
+     * to run targeted SQL not covered by the Database interface.
+     */
+    public HikariDataSource getRawDataSource() {
+        return ds;
+    }
 }

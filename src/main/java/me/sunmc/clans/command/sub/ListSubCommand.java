@@ -28,16 +28,14 @@ public class ListSubCommand implements SubCommand {
 
         player.sendMessage(plugin.getMessagesManager().parse("list-header"));
 
-        // Sort by member count descending, then alphabetical
         clans.stream()
                 .sorted(Comparator.comparingInt(Clan::getMemberCount).reversed()
                         .thenComparing(Clan::getName))
                 .forEach(clan -> player.sendMessage(
-                        plugin.getMessagesManager().parse("list-entry", Map.of(
-                                "tag", clan.getTag(),
-                                "name", clan.getName(),
-                                "members", String.valueOf(clan.getMemberCount())
-                        ))
+                        plugin.getMessagesManager().parse("list-entry",
+                                Map.of("name", clan.getName(),
+                                        "members", String.valueOf(clan.getMemberCount())),
+                                Map.of("tag", plugin.getMessagesManager().deserialize(clan.getTag())))
                 ));
     }
 

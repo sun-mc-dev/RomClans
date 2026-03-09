@@ -180,18 +180,26 @@ public class RedisSubscriber extends RedisPubSubAdapter<String, String> {
                 c.setHomeYaw(j.get("yaw").getAsFloat());
                 c.setHomePitch(j.get("pitch").getAsFloat());
                 c.setHomeSet(true);
+                if (j.has("serverId")) c.setHomeServerId(j.get("serverId").getAsString());
             }
             case "CACHE_INVALIDATE" -> plugin.getClanManager().loadAll();
 
-            case "PLAYER_ONLINE" -> plugin.getNetworkPlayerTracker()
-                    .setOnline(UUID.fromString(j.get("uuid").getAsString()));
+            case "PLAYER_ONLINE" -> {
+                UUID uuid = UUID.fromString(j.get("uuid").getAsString());
+                String name = j.has("name") ? j.get("name").getAsString() : null;
+                plugin.getNetworkPlayerTracker().setOnline(uuid, name);
+            }
 
-            case "PLAYER_OFFLINE" -> plugin.getNetworkPlayerTracker()
-                    .setOffline(UUID.fromString(j.get("uuid").getAsString()));
+            case "PLAYER_OFFLINE" -> {
+                UUID uuid = UUID.fromString(j.get("uuid").getAsString());
+                String name = j.has("name") ? j.get("name").getAsString() : null;
+                plugin.getNetworkPlayerTracker().setOffline(uuid, name);
+            }
 
             case "REQUEST_ONLINE_PLAYERS" -> {
                 for (Player p : plugin.getServer().getOnlinePlayers()) {
-                    plugin.getRedisManager().publishPlayerOnline(p.getUniqueId().toString());
+                    plugin.getRedisManager().publishPlayerOnline(
+                            p.getUniqueId().toString(), p.getName());
                 }
             }
         }

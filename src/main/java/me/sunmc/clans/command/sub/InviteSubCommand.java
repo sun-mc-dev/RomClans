@@ -7,9 +7,7 @@ import me.sunmc.clans.model.ClanRank;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class InviteSubCommand implements SubCommand {
 
@@ -40,13 +38,12 @@ public class InviteSubCommand implements SubCommand {
         Player target = plugin.getServer().getPlayerExact(targetName);
 
         if (target != null) {
-            // Player is online on this server — normal flow
             inviteOnline(player, clan, target);
         } else if (plugin.getRedisManager().isActive()) {
-            // Player may be on another server — look up UUID from known_players table
             plugin.getDatabase().findPlayerUuidByName(targetName).thenAccept(uuidOpt -> {
                 if (uuidOpt.isEmpty()) {
-                    plugin.getMessagesManager().send(player, "player-not-found", Map.of("player", targetName));
+                    plugin.getMessagesManager().send(player, "player-not-found",
+                            Map.of("player", targetName));
                     return;
                 }
                 UUID targetUuid = uuidOpt.get();
@@ -58,12 +55,14 @@ public class InviteSubCommand implements SubCommand {
                     plugin.getMessagesManager().send(player, "invite-already-sent");
                     return;
                 }
-                // createInvite will relay via Redis since target is null locally
-                plugin.getInviteManager().createInvite(clan, player.getUniqueId(), targetUuid, targetName);
-                plugin.getMessagesManager().send(player, "invite-sent", Map.of("player", targetName));
+                plugin.getInviteManager().createInvite(clan, player.getUniqueId(),
+                        targetUuid, targetName);
+                plugin.getMessagesManager().send(player, "invite-sent",
+                        Map.of("player", targetName));
             });
         } else {
-            plugin.getMessagesManager().send(player, "player-not-found", Map.of("player", targetName));
+            plugin.getMessagesManager().send(player, "player-not-found",
+                    Map.of("player", targetName));
         }
     }
 
@@ -76,19 +75,33 @@ public class InviteSubCommand implements SubCommand {
             plugin.getMessagesManager().send(player, "invite-already-sent");
             return;
         }
-        plugin.getInviteManager().createInvite(clan, player.getUniqueId(), target.getUniqueId(), target.getName());
-        plugin.getMessagesManager().send(player, "invite-sent", Map.of("player", target.getName()));
+        plugin.getInviteManager().createInvite(clan, player.getUniqueId(),
+                target.getUniqueId(), target.getName());
+        plugin.getMessagesManager().send(player, "invite-sent",
+                Map.of("player", target.getName()));
     }
 
     @Override
     public List<String> tabComplete(Player p, String @NotNull [] a) {
-        if (a.length == 1) {
-            return plugin.getServer().getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .filter(n -> n.toLowerCase().startsWith(a[0].toLowerCase()))
-                    .toList();
+        if (a.length != 1) return List.of();
+        String partial = a[0].toLowerCase(Locale.ROOT);
+
+        // Start with players on THIS server (excluding self)
+        Set<String> names = new LinkedHashSet<>();
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (!online.equals(p))
+                names.add(online.getName());
         }
-        return List.of();
+
+        // Add players online on OTHER servers via NetworkPlayerTracker
+        if (plugin.getRedisManager().isActive()) {
+            names.addAll(plugin.getNetworkPlayerTracker().getOnlineNames());
+        }
+
+        return names.stream()
+                .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(partial))
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
     }
 
     @Override

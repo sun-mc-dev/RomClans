@@ -52,7 +52,10 @@ public class RetagSubCommand implements SubCommand {
         }
 
         plugin.getClanManager().retag(clan, newTag).thenRun(() ->
-                plugin.getMessagesManager().send(player, "retag-success", Map.of("tag", newTag)));
+                // Pass the tag as a Component so its styles cannot bleed
+                plugin.getMessagesManager().send(player, "retag-success",
+                        Map.of(),
+                        Map.of("tag", plugin.getMessagesManager().deserialize(newTag))));
     }
 
     @Override
