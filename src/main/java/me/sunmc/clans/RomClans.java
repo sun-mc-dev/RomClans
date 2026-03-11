@@ -1,5 +1,6 @@
 package me.sunmc.clans;
 
+import me.sunmc.clans.api.RomClansAPI;
 import me.sunmc.clans.cache.ClanCache;
 import me.sunmc.clans.cache.NetworkPlayerTracker;
 import me.sunmc.clans.command.ClanAdminCommand;
@@ -95,6 +96,8 @@ public final class RomClans extends JavaPlugin {
         chatManager = new ChatManager(this);
         guiManager = new GUIManager();
 
+        RomClansAPI.init(this);
+
         try {
             clanManager.loadAll().join();
         } catch (Exception e) {
@@ -119,12 +122,41 @@ public final class RomClans extends JavaPlugin {
             getLogger().info("PlaceholderAPI expansion registered.");
         }
 
-        getLogger().info("RomClans enabled. DB=" + configManager.getDatabaseType()
-                + " Redis=" + configManager.isRedisEnabled());
+        startLogo();
+    }
+
+    private void startLogo() {
+        String db = configManager.getDatabaseType();
+        String redis = configManager.isRedisEnabled() ? "Enabled" : "Disabled";
+        String ver = getPluginMeta().getVersion();
+        String api = RomClansAPI.isAvailable() ? "Enabled" : "Disabled";
+
+        final String GOLD = "\u001B[33m";
+        final String WHITE = "\u001B[97m";
+        final String GRAY = "\u001B[90m";
+        final String GREEN = "\u001B[92m";
+        final String RESET = "\u001B[0m";
+
+        getLogger().info("");
+        getLogger().info(GOLD + "  __________  ________      _____    _________ .____       _____    _______    _________" + RESET);
+        getLogger().info(GOLD + "  ╲______   ╲╲_____  ╲    ╱     ╲   ╲_   ___ ╲│    │     ╱  _  ╲   ╲      ╲  ╱   _____╱" + RESET);
+        getLogger().info(GOLD + "   │       _╱ ╱   │   ╲  ╱  ╲ ╱  ╲  ╱    ╲  ╲╱│    │    ╱  ╱_╲  ╲  ╱   │   ╲ ╲_____  ╲ " + RESET);
+        getLogger().info(GOLD + "   │    │   ╲╱    │    ╲╱    Y    ╲ ╲     ╲___│    │___╱    │    ╲╱    │    ╲╱        ╲" + RESET);
+        getLogger().info(GOLD + "   │____│_  ╱╲_______  ╱╲____│__  ╱  ╲______  ╱_______ ╲____│__  ╱╲____│__  ╱_______  ╱" + RESET);
+        getLogger().info(GOLD + "           ╲╱         ╲╱         ╲╱          ╲╱        ╲╱       ╲╱         ╲╱        ╲╱" + RESET);
+        getLogger().info("");
+        getLogger().info(GRAY + "  Version  " + WHITE + ver + RESET);
+        getLogger().info(GRAY + "  Database " + WHITE + db + RESET);
+        getLogger().info(GRAY + "  Redis    " + WHITE + redis + RESET);
+        getLogger().info(GRAY + "  API      " + WHITE + api + RESET);
+        getLogger().info("");
+        getLogger().info(GREEN + "  Plugin enabled successfully." + RESET);
+        getLogger().info("");
     }
 
     @Override
     public void onDisable() {
+        RomClansAPI.shutdown();
         if (inviteManager != null) inviteManager.shutdown();
         if (chatManager != null) chatManager.shutdown();
         if (redisManager != null) redisManager.shutdown();

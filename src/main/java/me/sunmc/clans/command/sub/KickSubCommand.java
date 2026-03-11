@@ -1,6 +1,7 @@
 package me.sunmc.clans.command.sub;
 
 import me.sunmc.clans.RomClans;
+import me.sunmc.clans.api.event.ClanMemberLeaveEvent;
 import me.sunmc.clans.command.SubCommand;
 import me.sunmc.clans.model.Clan;
 import me.sunmc.clans.model.ClanMember;
@@ -60,7 +61,8 @@ public class KickSubCommand implements SubCommand {
         UUID targetUuid = target.getPlayerUuid();
         String targetName = target.getPlayerName();
 
-        plugin.getClanManager().removeMember(clan, targetUuid).thenRun(() -> {
+        plugin.getClanManager().removeMember(clan, targetUuid,
+        ClanMemberLeaveEvent.Reason.KICKED).thenRun(() -> {
             plugin.getMessagesManager().send(player, "kick-success", Map.of("player", targetName));
             Player targetPlayer = plugin.getServer().getPlayer(targetUuid);
             if (targetPlayer != null) {

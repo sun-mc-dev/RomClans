@@ -1,6 +1,7 @@
 package me.sunmc.clans.command.sub;
 
 import me.sunmc.clans.RomClans;
+import me.sunmc.clans.api.event.ClanMemberLeaveEvent;
 import me.sunmc.clans.command.SubCommand;
 import me.sunmc.clans.model.Clan;
 import me.sunmc.clans.model.ClanMember;
@@ -25,7 +26,8 @@ public class LeaveSubCommand implements SubCommand {
             return;
         }
         String clanName = clan.getName();
-        plugin.getClanManager().removeMember(clan, player.getUniqueId()).thenRun(() -> {
+        plugin.getClanManager().removeMember(clan, player.getUniqueId(),
+        ClanMemberLeaveEvent.Reason.LEFT).thenRun(() -> {
             plugin.getMessagesManager().send(player, "leave-success", Map.of("clan", clanName));
             for (ClanMember m : clan.getMembers().values()) {
                 Player p = plugin.getServer().getPlayer(m.getPlayerUuid());

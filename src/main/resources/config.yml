@@ -1,7 +1,7 @@
 # ============================================================
 #  RomClans — Configuration
 #  Plugin by SunMC
-#  Version of 0.2-alpha.1
+#  Version of 0.3-alpha
 # ============================================================
 
 # The command alias players use to interact with clans.
@@ -9,7 +9,7 @@
 command-alias: clan
 
 # ───────────────────────────────────────────────
-# ─────────────── Database ─────────────────
+# ────────────────── Database ───────────────────
 # ───────────────────────────────────────────────
 # RomClans supports SQLite (single server) and MySQL (multiserver).
 #
@@ -41,7 +41,7 @@ database:
     use-ssl: false
 
 # ───────────────────────────────────────────────
-# ─────────────── Redis ─────────────────
+# ─────────────────── Redis ─────────────────────
 # ───────────────────────────────────────────────
 # Redis is optional but required for cross-server features such as:
 #   - Cross-server clan chat and ally chat

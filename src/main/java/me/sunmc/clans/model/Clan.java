@@ -1,17 +1,17 @@
 package me.sunmc.clans.model;
 
+import me.sunmc.clans.api.IClan;
+import me.sunmc.clans.api.IClanMember;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Clan {
+public class Clan implements IClan {
 
     private final UUID id;
     private final long createdAt;
@@ -47,8 +47,25 @@ public class Clan {
         members.remove(uuid);
     }
 
-    public boolean hasMember(UUID uuid) {
+    public boolean hasMember(@NotNull UUID uuid) {
         return members.containsKey(uuid);
+    }
+
+    @Override
+    public @NotNull Optional<? extends IClanMember> findMember(
+            @NotNull UUID uuid) {
+        return Optional.ofNullable(members.get(uuid));
+    }
+
+    @Override
+    public @NotNull Collection<? extends IClanMember> getAllMembers() {
+        return Collections.unmodifiableCollection(members.values());
+    }
+
+    @Override
+    public @NotNull Optional<Location> getHomeLocation() {
+        if (!homeSet) return Optional.empty();
+        return Optional.ofNullable(buildHomeLocation(Bukkit.getServer()));
     }
 
     public ClanMember getMember(UUID uuid) {
@@ -63,11 +80,11 @@ public class Clan {
         return members.size();
     }
 
-    public boolean isLeader(UUID uuid) {
+    public boolean isLeader(@NotNull UUID uuid) {
         return leaderUuid.equals(uuid);
     }
 
-    public ClanRank getRankOf(UUID uuid) {
+    public ClanRank getRankOf(@NotNull UUID uuid) {
         ClanMember m = members.get(uuid);
         return m == null ? null : m.getRank();
     }
@@ -90,15 +107,15 @@ public class Clan {
         allyIds.remove(clanId);
     }
 
-    public boolean isAlly(UUID clanId) {
+    public boolean isAlly(@NotNull UUID clanId) {
         return allyIds.contains(clanId);
     }
 
-    public Set<UUID> getAllyIds() {
+    public @NotNull Set<UUID> getAllyIds() {
         return Collections.unmodifiableSet(allyIds);
     }
 
-    public Set<UUID> getPendingAllyReqs() {
+    public @NotNull Set<UUID> getPendingAllyReqs() {
         return Collections.unmodifiableSet(pendingAllyReqs);
     }
 
@@ -110,11 +127,11 @@ public class Clan {
         enemyIds.remove(clanId);
     }
 
-    public boolean isEnemy(UUID clanId) {
+    public boolean isEnemy(@NotNull UUID clanId) {
         return enemyIds.contains(clanId);
     }
 
-    public Set<UUID> getEnemyIds() {
+    public @NotNull Set<UUID> getEnemyIds() {
         return Collections.unmodifiableSet(enemyIds);
     }
 
@@ -160,11 +177,11 @@ public class Clan {
         return w == null ? null : new Location(w, homeX, homeY, homeZ, homeYaw, homePitch);
     }
 
-    public UUID getId() {
+    public @NotNull UUID getId() {
         return id;
     }
 
-    public String getName() {
+    public @NotNull String getName() {
         return name;
     }
 
@@ -172,7 +189,7 @@ public class Clan {
         this.name = n;
     }
 
-    public String getTag() {
+    public @NotNull String getTag() {
         return tag;
     }
 
@@ -180,7 +197,7 @@ public class Clan {
         this.tag = t;
     }
 
-    public UUID getLeaderUuid() {
+    public @NotNull UUID getLeaderUuid() {
         return leaderUuid;
     }
 

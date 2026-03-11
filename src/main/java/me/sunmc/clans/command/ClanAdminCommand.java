@@ -168,7 +168,7 @@ public class ClanAdminCommand extends Command {
                 Component.text("Admin Disband: " + clan.getName(), NamedTextColor.DARK_RED),
                 head,
                 () -> plugin.getServer().getAsyncScheduler().runNow(plugin, t ->
-                        plugin.getClanManager().disbandClan(clan).thenRun(() ->
+                        plugin.getClanManager().disbandClan(clan, true).thenRun(() ->
                                 player.sendMessage(Component.text("[RomClans] Clan " + clan.getName() + " disbanded.", NamedTextColor.GREEN)))),
                 plugin.getGuiManager());
     }
