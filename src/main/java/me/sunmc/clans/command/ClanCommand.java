@@ -44,6 +44,7 @@ public class ClanCommand extends Command {
         sub("info", new InfoSubCommand(plugin));
         sub("members", new MembersSubCommand(plugin));
         sub("list", new ListSubCommand(plugin));
+        sub("online", new OnlineSubCommand(plugin));
         sub("retag", new RetagSubCommand(plugin));
         sub("sethome", new SetHomeSubCommand(plugin));
         sub("home", new HomeSubCommand(plugin));
@@ -134,13 +135,7 @@ public class ClanCommand extends Command {
     }
 
     private void sendHelp(@NotNull Player player, String label) {
-        player.sendMessage(plugin.getMessagesManager().getMiniMessage().deserialize(
-                "<gold><bold>RomClans Help</bold></gold>\n" +
-                        "<gray>/" + label + " create <name> <tag></gray>\n" +
-                        "<gray>/" + label + " disband | friendlyfire | invite | accept | deny | leave\n" +
-                        "/" + label + " kick | promote | demote | transfer | retag\n" +
-                        "/" + label + " ally <add|accept|deny|remove> | enemy <add|remove>\n" +
-                        "/" + label + " chat | info | members | list | sethome | home</gray>"
-        ));
+        player.sendMessage(plugin.getMessagesManager().parse("help",
+                Map.of("label", label)));
     }
 }

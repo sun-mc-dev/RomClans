@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -41,7 +42,7 @@ public class ClanAdminCommand extends Command {
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String label, String @NotNull [] args) {
         if (!sender.hasPermission(PERM)) {
-            sender.sendMessage(Component.text("No permission.", NamedTextColor.RED));
+            plugin.getMessagesManager().send(sender, "no-permission");
             return true;
         }
         if (args.length == 0) {
@@ -53,24 +54,27 @@ public class ClanAdminCommand extends Command {
             case "reload" -> {
                 plugin.getConfigManager().reload();
                 plugin.getMessagesManager().reload();
-                sender.sendMessage(Component.text("[RomClans] Reloaded config & messages.", NamedTextColor.GREEN));
+                plugin.getMessagesManager().send(sender, "admin-reload");
             }
 
             case "disband" -> {
                 if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /" + label + " disband <clan>", NamedTextColor.RED));
+                    plugin.getMessagesManager().send(sender, "admin-disband-usage",
+                            Map.of("label", label));
                     return true;
                 }
                 String name = args[1];
                 plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
                     Clan clan = plugin.getClanCache().getByName(name);
                     if (clan == null) {
-                        sender.sendMessage(Component.text("Clan not found.", NamedTextColor.RED));
+                        plugin.getMessagesManager().send(sender, "clan-not-found",
+                                Map.of("clan", name));
                         return;
                     }
                     if (!(sender instanceof Player player)) {
                         plugin.getClanManager().disbandClan(clan).thenRun(() ->
-                                sender.sendMessage(Component.text("[RomClans] Clan " + clan.getName() + " disbanded.", NamedTextColor.GREEN)));
+                                plugin.getMessagesManager().send(sender, "admin-disband-success",
+                                        Map.of("clan", clan.getName())));
                         return;
                     }
                     plugin.getFoliaScheduler().entity(player, () -> openDisbandGui(player, clan));
@@ -79,18 +83,20 @@ public class ClanAdminCommand extends Command {
 
             case "info" -> {
                 if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /" + label + " info <clan>", NamedTextColor.RED));
+                    plugin.getMessagesManager().send(sender, "admin-info-usage",
+                            Map.of("label", label));
                     return true;
                 }
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(Component.text("Console: use /clan info instead.", NamedTextColor.YELLOW));
+                    plugin.getMessagesManager().send(sender, "admin-player-only");
                     return true;
                 }
                 String name = args[1];
                 plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
                     Clan clan = plugin.getClanCache().getByName(name);
                     if (clan == null) {
-                        player.sendMessage(Component.text("Clan not found.", NamedTextColor.RED));
+                        plugin.getMessagesManager().send(player, "clan-not-found",
+                                Map.of("clan", name));
                         return;
                     }
                     plugin.getFoliaScheduler().entity(player, () ->
@@ -98,12 +104,10 @@ public class ClanAdminCommand extends Command {
                 });
             }
 
-            // Sets home_server_id in the DB + in-memory cache without moving the
-            // home coordinates. Run this from the console of any server.
             case "fixhome" -> {
                 if (args.length < 3) {
-                    sender.sendMessage(Component.text(
-                            "Usage: /" + label + " fixhome <clan> <server-id>", NamedTextColor.RED));
+                    plugin.getMessagesManager().send(sender, "admin-fixhome-usage",
+                            Map.of("label", label));
                     return true;
                 }
                 String clanName = args[1];
@@ -111,19 +115,16 @@ public class ClanAdminCommand extends Command {
                 plugin.getServer().getAsyncScheduler().runNow(plugin, t -> {
                     Clan clan = plugin.getClanCache().getByName(clanName);
                     if (clan == null) {
-                        sender.sendMessage(Component.text("Clan '" + clanName + "' not found.", NamedTextColor.RED));
+                        plugin.getMessagesManager().send(sender, "clan-not-found",
+                                Map.of("clan", clanName));
                         return;
                     }
                     if (!clan.isHomeSet()) {
-                        sender.sendMessage(Component.text("Clan '" + clanName + "' has no home set.", NamedTextColor.RED));
+                        plugin.getMessagesManager().send(sender, "admin-fixhome-no-home",
+                                Map.of("clan", clanName));
                         return;
                     }
-                    // Update in-memory
                     clan.setHomeServerId(serverId);
-                    Location fakeLoc = new Location(
-                            null, clan.getHomeX(), clan.getHomeY(), clan.getHomeZ(),
-                            clan.getHomeYaw(), clan.getHomePitch());
-
                     plugin.getDbExecutor().submit(() -> {
                         try (Connection conn =
                                      ((AbstractDatabase) plugin.getDatabase())
@@ -133,12 +134,12 @@ public class ClanAdminCommand extends Command {
                             ps.setString(1, serverId);
                             ps.setString(2, clan.getId().toString());
                             ps.executeUpdate();
-                            sender.sendMessage(Component.text(
-                                    "[RomClans] home_server_id for '" + clan.getName()
-                                            + "' set to '" + serverId + "'.", NamedTextColor.GREEN));
+                            plugin.getMessagesManager().send(sender, "admin-fixhome-success",
+                                    Map.of("clan", clan.getName(), "server", serverId));
                         } catch (SQLException e) {
                             plugin.getLogger().warning("fixhome SQL error: " + e.getMessage());
-                            sender.sendMessage(Component.text("SQL error: " + e.getMessage(), NamedTextColor.RED));
+                            plugin.getMessagesManager().send(sender, "admin-fixhome-error",
+                                    Map.of("error", e.getMessage()));
                         }
                     });
                 });
@@ -147,6 +148,11 @@ public class ClanAdminCommand extends Command {
             default -> sendHelp(sender, label);
         }
         return true;
+    }
+
+    private void sendHelp(@NotNull CommandSender sender, String label) {
+        sender.sendMessage(plugin.getMessagesManager().parse("admin-help",
+                Map.of("label", label)));
     }
 
     private void openDisbandGui(Player player, @NotNull Clan clan) {
@@ -171,16 +177,6 @@ public class ClanAdminCommand extends Command {
                         plugin.getClanManager().disbandClan(clan, true).thenRun(() ->
                                 player.sendMessage(Component.text("[RomClans] Clan " + clan.getName() + " disbanded.", NamedTextColor.GREEN)))),
                 plugin.getGuiManager());
-    }
-
-    private void sendHelp(@NotNull CommandSender s, String label) {
-        s.sendMessage(Component.text()
-                .append(Component.text("[RomClans Admin]\n", NamedTextColor.GOLD))
-                .append(Component.text("/" + label + " reload\n", NamedTextColor.YELLOW))
-                .append(Component.text("/" + label + " disband <clan>\n", NamedTextColor.YELLOW))
-                .append(Component.text("/" + label + " info <clan>\n", NamedTextColor.YELLOW))
-                .append(Component.text("/" + label + " fixhome <clan> <server-id>", NamedTextColor.YELLOW))
-                .build());
     }
 
     @Override

@@ -9,6 +9,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.regex.Pattern;
+
 public class ClansPlaceholderExpansion extends PlaceholderExpansion {
 
     private final RomClans plugin;
@@ -52,6 +54,13 @@ public class ClansPlaceholderExpansion extends PlaceholderExpansion {
                 if (clan == null) yield "None";
                 ClanMember m = clan.getMember(player.getUniqueId());
                 yield m == null ? "None" : m.getRank().getDisplay();
+            }
+            case "clan_tag_bracket" -> {
+                if (clan == null) yield "";
+                String inner = plugin.getMessagesManager().getMiniMessage().stripTags(clan.getTag());
+                String coloredName = clan.getTag().replaceFirst(Pattern.quote(inner), clan.getName());
+                yield LEGACY.serialize(plugin.getMessagesManager().getMiniMessage()
+                        .deserialize("<gray>[</gray>" + coloredName + "<gray>]</gray>"));
             }
             case "clan_members" -> clan == null ? "0" : String.valueOf(clan.getMemberCount());
             case "clan_max_members" -> String.valueOf(plugin.getConfigManager().getMaxMembers());

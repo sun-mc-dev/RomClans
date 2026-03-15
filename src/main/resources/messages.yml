@@ -1,7 +1,7 @@
 # ============================================================
 #  RomClans — Messages
 #  Plugin by SunMC
-#  Version of 0.3-alpha
+#  Version of 0.3-alpha.1
 # ============================================================
 #
 #  Formatting: All messages support MiniMessage syntax.
@@ -48,6 +48,46 @@ error: "{prefix} <red>An internal error occurred. Please contact an admin."
 
 # Shown when the console tries to run a player-only command.
 console-no-use: "Only players can use clan commands."
+
+# ── Help (/clan) ──────────────────────────────────────────────
+# Placeholders: <label>
+help: |
+  <gold><bold>RomClans Help</bold></gold>
+  <gray>/<label> create <n> <tag>
+  /<label> disband | friendlyfire | invite | accept | deny | leave
+  /<label> kick | promote | demote | transfer | retag
+  /<label> ally <add|accept|deny|remove> | enemy <add|remove>
+  /<label> chat | info | members | list | online | sethome | home</gray>
+
+# ── Admin (/clanadmin) ────────────────────────────────────────
+# Placeholders: <label>
+admin-help: |
+  <gold><bold>[RomClans Admin]</bold></gold>
+  <yellow>/<label> reload
+  /<label> disband <clan>
+  /<label> info <clan>
+  /<label> fixhome <clan> <server-id></yellow>
+
+admin-reload: "{prefix} <green>Config and messages reloaded."
+
+# Placeholders: <label>
+admin-disband-usage: "{prefix} <red>Usage: /<label> disband <clan>"
+# Placeholders: <clan>
+admin-disband-success: "{prefix} <green>Clan <gold><clan></gold> has been disbanded."
+
+# Placeholders: <label>
+admin-info-usage: "{prefix} <red>Usage: /<label> info <clan>"
+
+admin-player-only: "{prefix} <red>This command can only be used by a player."
+
+# Placeholders: <label>
+admin-fixhome-usage: "{prefix} <red>Usage: /<label> fixhome <clan> <server-id>"
+# Placeholders: <clan>
+admin-fixhome-no-home: "{prefix} <red>Clan <yellow><clan></yellow> has no home set."
+# Placeholders: <clan>, <server>
+admin-fixhome-success: "{prefix} <green>home_server_id for <gold><clan></gold> set to <white><server></white>."
+# Placeholders: <error>
+admin-fixhome-error: "{prefix} <red>SQL error: <yellow><error>"
 
 # ── Create (/clan create <name> <tag>) ───────────────────────
 # Shown when the name fails the regex or length check.
@@ -407,3 +447,9 @@ home-wrong-server: "{prefix} <red>Your clan home is set on server <yellow><serve
 # Shown when /clan home sends the player to another server (Redis enabled).
 # Placeholders: <server>
 home-sending: "{prefix} <yellow>Your clan home is on server <white><server></white>. Sending you there now..."
+
+# ── Online (/clan online) ─────────────────────────────────────
+online-header: "<gold><bold>— Clans Online —"
+# Placeholders: <tag>, <name>, <count>
+online-entry: " <gray>-</gray> <tag> <yellow><name></yellow> <gray>(<count> online)</gray>"
+online-empty: "{prefix} <gray>No clans have members online right now."

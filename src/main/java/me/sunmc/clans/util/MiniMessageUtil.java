@@ -35,6 +35,7 @@ public final class MiniMessageUtil {
      */
     public static @NotNull TagValidationResult validateTag(String raw, int minLen, int maxLen) {
         if (raw == null || raw.isBlank()) return TagValidationResult.INVALID_LENGTH;
+        if (containsLegacyCodes(raw)) return TagValidationResult.FORBIDDEN_DECORATION;
         if (containsForbiddenDecoration(raw.toLowerCase())) return TagValidationResult.FORBIDDEN_DECORATION;
         try {
             Component c = MM.deserialize(raw);
@@ -45,6 +46,21 @@ public final class MiniMessageUtil {
         } catch (Exception e) {
             return TagValidationResult.INVALID_LENGTH;
         }
+    }
+
+    private static boolean containsLegacyCodes(@NotNull String raw) {
+        for (int i = 0; i < raw.length() - 1; i++) {
+            char c = raw.charAt(i);
+            if (c == '&' || c == '§') {
+                char next = Character.toLowerCase(raw.charAt(i + 1));
+                if ((next >= '0' && next <= '9') || (next >= 'a' && next <= 'f')
+                        || next == 'k' || next == 'l' || next == 'm'
+                        || next == 'n' || next == 'o' || next == 'r' || next == 'x') {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

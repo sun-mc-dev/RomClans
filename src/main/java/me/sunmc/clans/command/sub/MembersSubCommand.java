@@ -2,12 +2,11 @@ package me.sunmc.clans.command.sub;
 
 import me.sunmc.clans.RomClans;
 import me.sunmc.clans.command.SubCommand;
+import me.sunmc.clans.gui.MembersGUI;
 import me.sunmc.clans.model.Clan;
-import me.sunmc.clans.model.ClanMember;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +24,7 @@ public class MembersSubCommand implements SubCommand {
         if (args.length >= 1) {
             clan = plugin.getClanCache().getByName(args[0]);
             if (clan == null) {
-                plugin.getMessagesManager().send(player, "clan-not-found",
-                        Map.of("clan", args[0]));
+                plugin.getMessagesManager().send(player, "clan-not-found", Map.of("clan", args[0]));
                 return;
             }
         } else {
@@ -36,17 +34,9 @@ public class MembersSubCommand implements SubCommand {
                 return;
             }
         }
-
-        player.sendMessage(plugin.getMessagesManager().parse("members-header",
-                Map.of("name", clan.getName())));
-
-        // Sort: LEADER first, then CO_LEADER, OFFICER, MEMBER; alphabetical within rank
-        clan.getMembers().values().stream()
-                .sorted(Comparator
-                        .comparingInt((ClanMember m) -> m.getRank().getLevel()).reversed()
-                        .thenComparing(ClanMember::getPlayerName))
-                .forEach(m -> player.sendMessage(plugin.getMessagesManager().parse("members-entry",
-                        Map.of("player", m.getPlayerName(), "rank", m.getRank().getDisplay()))));
+        Clan finalClan = clan;
+        plugin.getFoliaScheduler().entity(player, () ->
+                MembersGUI.open(player, finalClan, 0, plugin, plugin.getGuiManager()));
     }
 
     @Override
